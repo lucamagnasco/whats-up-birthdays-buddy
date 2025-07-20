@@ -1,0 +1,127 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MessageCircle, Clock, Gift, Smartphone, Shield, Zap } from "lucide-react";
+
+const WhatsAppInfo = () => {
+  return (
+    <section className="py-20 bg-gradient-to-br from-celebration/5 to-birthday/5">
+      <div className="container mx-auto px-4">
+        <div className="text-center space-y-4 mb-16">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <MessageCircle className="w-12 h-12 text-celebration" />
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground">
+              WhatsApp Reminders
+            </h2>
+          </div>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Get personalized birthday reminders with gift suggestions sent directly to your WhatsApp
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-2xl font-bold text-foreground">How WhatsApp Reminders Work</h3>
+              <p className="text-lg text-muted-foreground">
+                Our system sends you personalized messages before your friends' birthdays, 
+                including their gift preferences and ideas to make shopping easier.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 bg-card rounded-lg border">
+                <Clock className="w-6 h-6 text-birthday mt-1" />
+                <div>
+                  <h4 className="font-semibold">Timely Reminders</h4>
+                  <p className="text-sm text-muted-foreground">Get notified 3 days and 1 day before birthdays</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 bg-card rounded-lg border">
+                <Gift className="w-6 h-6 text-gift mt-1" />
+                <div>
+                  <h4 className="font-semibold">Gift Suggestions</h4>
+                  <p className="text-sm text-muted-foreground">Includes friend's likes and interests for easy gift shopping</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 bg-card rounded-lg border">
+                <Shield className="w-6 h-6 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">Privacy Focused</h4>
+                  <p className="text-sm text-muted-foreground">Only you receive reminders about your friends</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Card className="border-0 shadow-2xl bg-gradient-to-br from-card to-muted/10">
+            <CardHeader className="text-center">
+              <div className="w-16 h-16 bg-celebration/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Smartphone className="w-8 h-8 text-celebration" />
+              </div>
+              <CardTitle className="text-xl">Sample WhatsApp Message</CardTitle>
+              <CardDescription>Here's what you'll receive</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-celebration/10 p-4 rounded-lg border-l-4 border-celebration">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageCircle className="w-4 h-4 text-celebration" />
+                  <span className="text-sm font-medium text-celebration">Birthday Buddy</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <p className="font-medium">🎉 Birthday Alert!</p>
+                  <p><strong>Sarah's birthday</strong> is tomorrow (March 15th)!</p>
+                  <p><strong>She loves:</strong> Coffee, books, yoga, plants, cooking</p>
+                  <p><strong>Gift ideas:</strong> A nice coffee blend, bestselling novel, or a small succulent plant</p>
+                  <p className="text-xs text-muted-foreground mt-2">Don't forget to wish her happy birthday! 🎂</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Badge variant="secondary" className="text-xs">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Instant delivery
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  <Gift className="w-3 h-3 mr-1" />
+                  Gift ideas included
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  <Clock className="w-3 h-3 mr-1" />
+                  Perfect timing
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="bg-card/50 rounded-2xl p-8 border">
+          <div className="text-center space-y-4">
+            <h3 className="text-2xl font-bold text-foreground">Setting Up WhatsApp Reminders</h3>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              To receive WhatsApp reminders, you'll need to provide your WhatsApp number when joining a group. 
+              We use WhatsApp's Business API to send messages securely and reliably.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center mt-6">
+              <Badge variant="outline" className="px-4 py-2">
+                <Shield className="w-4 h-4 mr-2" />
+                Secure & Private
+              </Badge>
+              <Badge variant="outline" className="px-4 py-2">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Official WhatsApp API
+              </Badge>
+              <Badge variant="outline" className="px-4 py-2">
+                <Zap className="w-4 h-4 mr-2" />
+                Instant Delivery
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default WhatsAppInfo;

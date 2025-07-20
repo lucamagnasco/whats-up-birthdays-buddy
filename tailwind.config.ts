@@ -52,6 +52,18 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				celebration: {
+					DEFAULT: 'hsl(var(--celebration))',
+					foreground: 'hsl(var(--celebration-foreground))'
+				},
+				birthday: {
+					DEFAULT: 'hsl(var(--birthday))',
+					foreground: 'hsl(var(--birthday-foreground))'
+				},
+				gift: {
+					DEFAULT: 'hsl(var(--gift))',
+					foreground: 'hsl(var(--gift-foreground))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
