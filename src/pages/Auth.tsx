@@ -21,7 +21,7 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        navigate("/");
+        navigate("/groups");
       }
     };
     checkUser();
@@ -69,7 +69,7 @@ const Auth = () => {
 
       if (error) throw error;
 
-      navigate("/");
+      navigate("/groups");
     } catch (error: any) {
       toast({
         title: "Error",

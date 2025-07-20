@@ -21,11 +21,11 @@ const Hero = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" variant="celebration" className="text-lg px-8 py-6">
+              <Button size="lg" variant="celebration" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
                 <Users className="mr-2" />
                 Create Your Group
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
                 <Calendar className="mr-2" />
                 Join a Group
               </Button>
