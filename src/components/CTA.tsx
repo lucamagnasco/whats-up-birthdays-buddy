@@ -45,12 +45,12 @@ const CTA = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button size="lg" variant="celebration" className="text-lg px-8 py-6 shadow-lg">
+                <Button size="lg" variant="celebration" className="text-lg px-8 py-6 shadow-lg" onClick={() => window.location.href = '/auth'}>
                   <Users className="mr-2" />
                   Create Your Group Now
                   <ArrowRight className="ml-2" />
                 </Button>
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
                   <Calendar className="mr-2" />
                   Join Existing Group
                 </Button>
