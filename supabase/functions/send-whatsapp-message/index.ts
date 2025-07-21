@@ -24,20 +24,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { messageId, template }: { messageId?: string; template?: WhatsAppTemplate } = await req.json();
+    const { messageId, template, templateId }: { 
+      messageId?: string; 
+      template?: WhatsAppTemplate; 
+      templateId?: string; 
+    } = await req.json();
 
-    // Get user's Kapso API key
-    const { data: config } = await supabase
-      .from('whatsapp_config')
-      .select('api_key')
-      .eq('is_active', true)
-      .single();
-
-    if (!config?.api_key) {
-      throw new Error('No active WhatsApp configuration found');
+    // Get Kapso API key from secrets
+    const kapsoApiKey = Deno.env.get('KAPSO_API_KEY');
+    if (!kapsoApiKey) {
+      throw new Error('KAPSO_API_KEY not found in environment variables');
     }
 
     let templateData: WhatsAppTemplate;
+    let templateIdToUse: string;
 
     if (messageId) {
       // Get pending message from database
@@ -58,21 +58,28 @@ serve(async (req) => {
         language: message.language,
         template_parameters: message.template_parameters
       };
-    } else if (template) {
+      
+      // Use template_name as template ID for now
+      templateIdToUse = message.template_name;
+    } else if (template && templateId) {
       templateData = template;
+      templateIdToUse = templateId;
     } else {
-      throw new Error('Either messageId or template must be provided');
+      throw new Error('Either messageId or both template and templateId must be provided');
     }
 
-    // Send message via Kapso API
-    const kapsoResponse = await fetch('https://api.kapso.ai/v1/whatsapp/send-template', {
+    // Send message via Kapso API using the correct format
+    const kapsoResponse = await fetch(`https://app.kapso.ai/api/v1/whatsapp_templates/${templateIdToUse}/send_template`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.api_key}`,
+        'X-API-Key': kapsoApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        template: templateData
+        template: {
+          phone_number: templateData.phone_number,
+          template_parameters: templateData.template_parameters
+        }
       }),
     });
 
