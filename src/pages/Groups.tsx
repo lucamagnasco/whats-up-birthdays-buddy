@@ -58,12 +58,19 @@ const Groups = () => {
   });
 
   useEffect(() => {
-    // Set up auth state listener to ensure proper session context
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const initializeAuth = async () => {
+      try {
+        // Check for existing session first
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session error:", error);
+          setLoading(false);
+          return;
+        }
+
         if (session?.user) {
           setCurrentUser(session.user);
-          // Only load groups when we have a valid session
           await loadGroups();
           
           // Check for invite parameter in URL
@@ -75,30 +82,32 @@ const Groups = () => {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
         } else {
-          // Redirect to auth if no session
+          // No session, redirect to auth
+          setLoading(false);
+          window.location.href = '/auth';
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        setLoading(false);
+      }
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setCurrentUser(session.user);
+          setLoading(true);
+          await loadGroups();
+        } else {
+          setLoading(false);
           window.location.href = '/auth';
         }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setCurrentUser(session.user);
-        loadGroups();
-        
-        // Check for invite parameter in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const inviteParam = urlParams.get('invite');
-        if (inviteParam) {
-          handleJoinGroup(inviteParam);
-          // Remove the invite parameter from URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      } else {
-        window.location.href = '/auth';
-      }
-    });
+    // Initialize auth
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, []);
