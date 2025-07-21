@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Globe } from 'lucide-react';
 
 const LanguageToggle = () => {
+  console.log('LanguageToggle component rendering');
   const { language, setLanguage } = useLanguage();
 
   return (

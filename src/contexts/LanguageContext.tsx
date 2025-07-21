@@ -116,6 +116,7 @@ const translations = {
 };
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  console.log('LanguageProvider rendering');
   const [language, setLanguage] = useState<Language>('en');
 
   const t = (key: string): string => {
