@@ -57,7 +57,10 @@ const Hero = () => {
                 size="lg" 
                 variant="outline" 
                 className="text-lg px-8 py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300 group" 
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => {
+                  // Trigger join group popup
+                  window.dispatchEvent(new CustomEvent('openJoinGroupDialog'));
+                }}
               >
                 <Play className="mr-3 w-5 h-5" />
                 {t('hero.joinGroup')}

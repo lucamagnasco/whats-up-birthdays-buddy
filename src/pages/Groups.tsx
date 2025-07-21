@@ -418,21 +418,10 @@ const Groups = () => {
 
   const deleteGroup = async (groupId: string) => {
     try {
-      // First delete all group members
-      const { error: membersError } = await supabase
-        .from("group_members")
-        .delete()
-        .eq("group_id", groupId);
-
-      if (membersError) {
-        console.warn("Error deleting group members:", membersError);
-        // Continue with group deletion even if members deletion fails
-      }
-
-      // Then delete the group
+      // Soft delete: set deactivated_at timestamp
       const { error } = await supabase
         .from("groups")
-        .delete()
+        .update({ deactivated_at: new Date().toISOString() })
         .eq("id", groupId);
 
       if (error) throw error;
@@ -441,8 +430,8 @@ const Groups = () => {
       setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
 
       toast({
-        title: "Group Deleted",
-        description: "The group has been permanently deleted.",
+        title: "Group Deactivated",
+        description: "The group has been deactivated and is no longer visible.",
       });
 
       // Refresh from server to ensure consistency
@@ -451,7 +440,7 @@ const Groups = () => {
       console.error("Delete group error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete group: " + error.message,
+        description: "Failed to deactivate group: " + error.message,
         variant: "destructive",
       });
     }
