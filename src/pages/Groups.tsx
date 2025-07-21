@@ -49,11 +49,43 @@ const Groups = () => {
   });
 
   useEffect(() => {
-    loadGroups();
+    // Set up auth state listener to ensure proper session context
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          // Only load groups when we have a valid session
+          await loadGroups();
+        } else {
+          // Redirect to auth if no session
+          window.location.href = '/auth';
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadGroups();
+      } else {
+        window.location.href = '/auth';
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const loadGroups = async () => {
     try {
+      // Ensure we have a valid session before making requests
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        console.log("No session found, redirecting to auth");
+        window.location.href = '/auth';
+        return;
+      }
+
+      console.log("Loading groups for user:", session.user.id);
+
       const { data, error } = await supabase
         .from("groups")
         .select(`
@@ -68,8 +100,10 @@ const Groups = () => {
         member_count: group.group_members?.[0]?.count || 0
       })) || [];
 
+      console.log("Loaded groups:", groupsWithCounts);
       setGroups(groupsWithCounts);
     } catch (error: any) {
+      console.error("Load groups error:", error);
       toast({
         title: "Error",
         description: "Failed to load groups",
@@ -100,15 +134,20 @@ const Groups = () => {
 
   const createGroup = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+    setLoading(true);
 
-      console.log("User ID:", user.id);
+    try {
+      // Use getSession instead of getUser to ensure proper auth context
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
+      if (!session?.user) throw new Error("Not authenticated");
+
+      console.log("Session user ID:", session.user.id);
       console.log("Creating group with data:", {
         name: newGroupName,
         description: newGroupDescription,
-        created_by: user.id
+        created_by: session.user.id
       });
 
       const { data, error } = await supabase
@@ -116,7 +155,7 @@ const Groups = () => {
         .insert({
           name: newGroupName,
           description: newGroupDescription,
-          created_by: user.id
+          created_by: session.user.id,
         })
         .select()
         .single();
@@ -125,6 +164,8 @@ const Groups = () => {
         console.error("Insert error:", error);
         throw error;
       }
+
+      console.log("Group created successfully:", data);
 
       toast({
         title: "Success",
@@ -136,11 +177,14 @@ const Groups = () => {
       setNewGroupDescription("");
       loadGroups();
     } catch (error: any) {
+      console.error("Create group error:", error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
