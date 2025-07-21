@@ -59,8 +59,8 @@ serve(async (req) => {
         template_parameters: message.template_parameters
       };
       
-      // Use template_name as template ID for now
-      templateIdToUse = message.template_name;
+      // Use the specific Kapso template ID for birthday alerts
+      templateIdToUse = '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c';
     } else if (template && templateId) {
       templateData = template;
       templateIdToUse = templateId;
