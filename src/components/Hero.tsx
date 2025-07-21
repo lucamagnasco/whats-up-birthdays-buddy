@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Gift, Users, Calendar, MessageCircle, ArrowRight, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import heroImage from "@/assets/messi-celebration.jpg";
+const heroImageUrl = "/lovable-uploads/bcba4eb2-f94e-4c62-98a4-213d90f47f48.png";
 
 const Hero = () => {
   const { t } = useLanguage();
@@ -103,7 +103,7 @@ const Hero = () => {
           <div className="relative animate-scale-in">
             <div className="relative rounded-3xl overflow-hidden shadow-elevation bg-gradient-to-br from-white to-gray-50">
               <img 
-                src={heroImage} 
+                src={heroImageUrl} 
                 alt="Messi celebration with teammates"
                 className="w-full h-auto object-cover"
               />
