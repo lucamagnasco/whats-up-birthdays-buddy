@@ -422,23 +422,24 @@ const Groups = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">My Groups</h1>
-          <p className="text-muted-foreground">Manage your birthday reminder groups</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">My Groups</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your birthday reminder groups</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <UserMenu />
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
           <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
-                <Users className="w-4 h-4 mr-2" />
-                Join Group
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                <Users className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Join Group</span>
+                <span className="xs:hidden">Join</span>
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[95vw] max-w-md mx-auto">
               <DialogHeader>
                 <DialogTitle>Join a Group</DialogTitle>
                 <DialogDescription>
@@ -463,12 +464,13 @@ const Groups = () => {
 
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Group
+              <Button size="sm" className="text-xs sm:text-sm">
+                <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Create Group</span>
+                <span className="xs:hidden">Create</span>
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[95vw] max-w-md mx-auto">
               <DialogHeader>
                 <DialogTitle>Create New Group</DialogTitle>
                 <DialogDescription>
@@ -503,27 +505,27 @@ const Groups = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {groups.map((group) => (
           <Card key={group.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                {group.name}
-                <Badge variant="secondary">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base sm:text-lg">
+                <span className="truncate">{group.name}</span>
+                <Badge variant="secondary" className="text-xs shrink-0">
                   {group.member_count} member{group.member_count !== 1 ? 's' : ''}
                 </Badge>
               </CardTitle>
               {group.description && (
-                <CardDescription>{group.description}</CardDescription>
+                <CardDescription className="text-sm line-clamp-2">{group.description}</CardDescription>
               )}
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex-1">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">Invite Link</p>
                   <a 
                     href={`${window.location.origin}/join?invite=${group.invite_code}`}
-                    className="text-xs text-primary hover:underline font-mono break-all"
+                    className="text-xs text-primary hover:underline font-mono break-all line-clamp-2"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -534,6 +536,7 @@ const Groups = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => copyInviteLink(group.invite_code)}
+                  className="shrink-0 ml-2"
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -543,23 +546,24 @@ const Groups = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 text-xs sm:text-sm"
                   onClick={() => {
                     setSelectedGroup(group);
                     loadGroupMembers(group.id);
                   }}
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  View Members
+                  <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">View Members</span>
+                  <span className="xs:hidden">Members</span>
                 </Button>
                 {currentUser && group.created_by === currentUser.id && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive shrink-0">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="w-[95vw] max-w-md mx-auto">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Group</AlertDialogTitle>
                         <AlertDialogDescription>
