@@ -59,8 +59,14 @@ serve(async (req) => {
         template_parameters: message.template_parameters
       };
       
-      // Use the specific Kapso template ID for birthday alerts
-      templateIdToUse = '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c';
+      // Use different Kapso template IDs based on message type
+      if (message.template_name === 'birthday_alert_arg') {
+        templateIdToUse = '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c'; // Birthday template
+      } else if (message.template_name === 'group_welcome_arg') {
+        templateIdToUse = 'YOUR_WELCOME_TEMPLATE_ID'; // Welcome template - needs to be configured
+      } else {
+        throw new Error(`Unknown template name: ${message.template_name}`);
+      }
     } else if (template && templateId) {
       templateData = template;
       templateIdToUse = templateId;
