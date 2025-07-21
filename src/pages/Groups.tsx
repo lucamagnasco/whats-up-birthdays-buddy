@@ -11,6 +11,8 @@ import { Plus, Users, Copy, Calendar, Gift, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import UserMenu from "@/components/UserMenu";
+import LanguageToggle from "@/components/LanguageToggle";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Group {
   id: string;
@@ -32,6 +34,7 @@ interface GroupMember {
 }
 
 const Groups = () => {
+  const { t } = useLanguage();
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -609,11 +612,14 @@ const Groups = () => {
       {/* Member Details Dialog */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Join {selectedGroup?.name}</DialogTitle>
-            <DialogDescription>
-              Please fill in your details to join the group
-            </DialogDescription>
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <DialogTitle>Join {selectedGroup?.name}</DialogTitle>
+              <DialogDescription>
+                Please fill in your details to join the group
+              </DialogDescription>
+            </div>
+            <LanguageToggle />
           </DialogHeader>
           <form onSubmit={addMemberToGroup} className="space-y-4">
             <div className="space-y-2">
@@ -668,13 +674,13 @@ const Groups = () => {
                 id="member-whatsapp"
                 value={memberData.whatsapp_number}
                 onChange={(e) => setMemberData({...memberData, whatsapp_number: e.target.value})}
-                placeholder="+1234567890"
+                placeholder="+541188889999"
                 required
               />
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><strong>Required for birthday reminders!</strong></p>
-                <p>Format: Include country code (e.g., +1 for US, +44 for UK)</p>
-                <p>Example: +1234567890, +447123456789</p>
+                <p>Include country code for WhatsApp notifications</p>
+                <p>Example: +541188889999, +447123456789</p>
               </div>
             </div>
             <Button type="submit" className="w-full">Join Group</Button>
