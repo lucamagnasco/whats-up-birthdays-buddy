@@ -80,13 +80,15 @@ const UserMenu = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Update profiles table
+      // Update profiles table - use upsert with onConflict to handle existing records
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({
           user_id: user.id,
           full_name: profile.full_name,
           whatsapp_number: profile.whatsapp_number
+        }, {
+          onConflict: 'user_id'
         });
 
       if (profileError) throw profileError;
