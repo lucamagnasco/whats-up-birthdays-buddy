@@ -77,6 +77,7 @@ export type Database = {
       group_members: {
         Row: {
           birthday: string
+          gift_wishes: string | null
           group_id: string
           id: string
           joined_at: string
@@ -87,6 +88,7 @@ export type Database = {
         }
         Insert: {
           birthday: string
+          gift_wishes?: string | null
           group_id: string
           id?: string
           joined_at?: string
@@ -97,6 +99,7 @@ export type Database = {
         }
         Update: {
           birthday?: string
+          gift_wishes?: string | null
           group_id?: string
           id?: string
           joined_at?: string
