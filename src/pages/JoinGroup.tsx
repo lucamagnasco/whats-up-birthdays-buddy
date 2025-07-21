@@ -32,11 +32,6 @@ const JoinGroup = () => {
     whatsapp_number: ""
   });
 
-  // Auth form
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showAuthForm, setShowAuthForm] = useState(false);
 
   useEffect(() => {
     if (inviteCode) {
@@ -84,80 +79,33 @@ const JoinGroup = () => {
     }
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setJoining(true);
 
+  const joinGroupAnonymously = async () => {
     try {
-      let authResult;
-      
-      if (authMode === 'signup') {
-        authResult = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
-      } else {
-        authResult = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-      }
+      if (!group) throw new Error("Group information not found");
 
-      if (authResult.error) throw authResult.error;
-
-      if (authMode === 'signup' && !authResult.data.session) {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link. Please check your email and click the link to verify your account before joining the group.",
-        });
-        return;
-      }
-
-      // If login successful, proceed to join group
-      await joinGroupWithAuth();
-      
-    } catch (error: any) {
-      toast({
-        title: "Authentication Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setJoining(false);
-    }
-  };
-
-  const joinGroupWithAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !group) throw new Error("Authentication required");
-
-      // Check if user is already a member
+      // Check if someone with the same WhatsApp number already exists in this group
       const { data: existingMember } = await supabase
         .from("group_members")
         .select("*")
         .eq("group_id", group.id)
-        .eq("user_id", user.id)
-        .single();
+        .eq("whatsapp_number", memberData.whatsapp_number)
+        .maybeSingle();
 
       if (existingMember) {
         toast({
           title: "Already a member",
-          description: "You are already a member of this group",
+          description: "Someone with this WhatsApp number is already in this group",
         });
-        navigate('/groups');
         return;
       }
 
-      // Add member to group
+      // Add member to group without user_id (anonymous)
       const { error } = await supabase
         .from("group_members")
         .insert({
           group_id: group.id,
-          user_id: user.id,
+          user_id: null, // Anonymous user
           name: memberData.name,
           birthday: memberData.birthday,
           likes: memberData.likes,
@@ -184,24 +132,23 @@ const JoinGroup = () => {
         if (whatsappError) {
           console.error('WhatsApp message error:', whatsappError);
           toast({
-            title: "Success! 🎉",
-            description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
+            title: "Welcome! 🎉",
+            description: "You've successfully joined the group! You can sign up later to manage your groups. (WhatsApp confirmation couldn't be sent - please check your number)",
           });
         } else {
           toast({
-            title: "Success! 🎉",
-            description: "Successfully joined the group! You should receive a WhatsApp confirmation message shortly.",
+            title: "Welcome! 🎉",
+            description: "You've successfully joined the group! You should receive a WhatsApp confirmation shortly. You can sign up later to manage your groups.",
           });
         }
       } catch (whatsappError: any) {
         console.error('WhatsApp message error:', whatsappError);
         toast({
-          title: "Success! 🎉",
-          description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation.",
+          title: "Welcome! 🎉",
+          description: "You've successfully joined the group! You can sign up later to manage your groups. (WhatsApp confirmation couldn't be sent)",
         });
       }
-
-      navigate('/groups');
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -213,16 +160,19 @@ const JoinGroup = () => {
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setJoining(true);
     
-    // Check if user is already authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session?.user) {
-      // User is already authenticated, proceed directly
-      await joinGroupWithAuth();
-    } else {
-      // User needs to authenticate first
-      setShowAuthForm(true);
+    try {
+      // Join group anonymously without requiring authentication
+      await joinGroupAnonymously();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -256,141 +206,79 @@ const JoinGroup = () => {
           )}
         </CardHeader>
         <CardContent>
-          {!showAuthForm ? (
-            <form onSubmit={handleJoinSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Your Name</Label>
-                <Input
-                  id="name"
-                  value={memberData.name}
-                  onChange={(e) => setMemberData({ ...memberData, name: e.target.value })}
-                  placeholder="Your full name"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="birthday">Birthday</Label>
-                <div className="relative">
-                  <Input
-                    id="birthday"
-                    type="date"
-                    value={memberData.birthday}
-                    onChange={(e) => setMemberData({ ...memberData, birthday: e.target.value })}
-                    required
-                  />
-                  <Calendar className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="likes">What do you like?</Label>
-                <Input
-                  id="likes"
-                  value={memberData.likes}
-                  onChange={(e) => setMemberData({ ...memberData, likes: e.target.value })}
-                  placeholder="e.g., coffee, books, music..."
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="gift_wishes">Gift wishes (optional)</Label>
-                <div className="relative">
-                  <Input
-                    id="gift_wishes"
-                    value={memberData.gift_wishes}
-                    onChange={(e) => setMemberData({ ...memberData, gift_wishes: e.target.value })}
-                    placeholder="What would you like as a gift?"
-                  />
-                  <Gift className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp Number</Label>
-                <Input
-                  id="whatsapp"
-                  value={memberData.whatsapp_number}
-                  onChange={(e) => setMemberData({ ...memberData, whatsapp_number: e.target.value })}
-                  placeholder="+1234567890"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Include country code for WhatsApp notifications
-                </p>
-              </div>
-              
-              <Button type="submit" className="w-full" disabled={joining}>
-                {joining ? "Joining..." : "Join Group"}
-              </Button>
-            </form>
-          ) : (
-            <div>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  To join this group, you need to sign in or create an account.
-                </p>
-              </div>
-              
-              <div className="flex space-x-1 mb-4">
-                <Button
-                  type="button"
-                  variant={authMode === 'signup' ? 'default' : 'outline'}
-                  onClick={() => setAuthMode('signup')}
-                  className="flex-1"
-                >
-                  Sign Up
-                </Button>
-                <Button
-                  type="button"
-                  variant={authMode === 'signin' ? 'default' : 'outline'}
-                  onClick={() => setAuthMode('signin')}
-                  className="flex-1"
-                >
-                  Sign In
-                </Button>
-              </div>
-              
-              <form onSubmit={handleAuth} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={joining}>
-                  {joining ? "Processing..." : authMode === 'signup' ? "Sign Up & Join Group" : "Sign In & Join Group"}
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowAuthForm(false)}
-                  className="w-full"
-                >
-                  Back to Group Info
-                </Button>
-              </form>
+          <form onSubmit={handleJoinSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Your Name</Label>
+              <Input
+                id="name"
+                value={memberData.name}
+                onChange={(e) => setMemberData({ ...memberData, name: e.target.value })}
+                placeholder="Your full name"
+                required
+              />
             </div>
-          )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="birthday">Birthday</Label>
+              <div className="relative">
+                <Input
+                  id="birthday"
+                  type="date"
+                  value={memberData.birthday}
+                  onChange={(e) => setMemberData({ ...memberData, birthday: e.target.value })}
+                  required
+                />
+                <Calendar className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="likes">What do you like?</Label>
+              <Input
+                id="likes"
+                value={memberData.likes}
+                onChange={(e) => setMemberData({ ...memberData, likes: e.target.value })}
+                placeholder="e.g., coffee, books, music..."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="gift_wishes">Gift wishes (optional)</Label>
+              <div className="relative">
+                <Input
+                  id="gift_wishes"
+                  value={memberData.gift_wishes}
+                  onChange={(e) => setMemberData({ ...memberData, gift_wishes: e.target.value })}
+                  placeholder="What would you like as a gift?"
+                />
+                <Gift className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp Number</Label>
+              <Input
+                id="whatsapp"
+                value={memberData.whatsapp_number}
+                onChange={(e) => setMemberData({ ...memberData, whatsapp_number: e.target.value })}
+                placeholder="+1234567890"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Include country code for WhatsApp notifications
+              </p>
+            </div>
+            
+            <div className="p-3 bg-muted/50 rounded-lg mb-4">
+              <p className="text-sm text-muted-foreground">
+                💡 No account needed! You can join now and create an account later to manage your groups.
+              </p>
+            </div>
+            
+            <Button type="submit" className="w-full" disabled={joining}>
+              {joining ? "Joining..." : "Join Group"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
