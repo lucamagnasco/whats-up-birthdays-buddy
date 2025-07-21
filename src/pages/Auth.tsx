@@ -7,11 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Gift } from "lucide-react";
+import { Gift, Smartphone } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [connectExisting, setConnectExisting] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,7 +35,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -41,6 +44,31 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // If connectExisting is true and we have a whatsapp number, connect existing memberships
+      if (connectExisting && whatsappNumber && data.user) {
+        try {
+          // Update anonymous group members with this user_id
+          const { error: updateError } = await supabase
+            .from("group_members")
+            .update({ user_id: data.user.id })
+            .eq("whatsapp_number", whatsappNumber)
+            .is("user_id", null);
+
+          if (updateError) {
+            console.error("Error connecting existing memberships:", updateError);
+          } else {
+            // Clear anonymous groups from localStorage since they're now connected
+            localStorage.removeItem('anonymousGroups');
+            toast({
+              title: "Memberships Connected!",
+              description: "Your existing group memberships have been linked to your account.",
+            });
+          }
+        } catch (connectError) {
+          console.error("Error connecting memberships:", connectError);
+        }
+      }
 
       toast({
         title: "Check your email",
@@ -151,6 +179,40 @@ const Auth = () => {
                     minLength={6}
                   />
                 </div>
+                
+                {/* Connect existing memberships section */}
+                <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="connect-existing" 
+                      checked={connectExisting}
+                      onCheckedChange={(checked) => setConnectExisting(checked as boolean)}
+                    />
+                    <Label htmlFor="connect-existing" className="text-sm font-medium">
+                      Connect existing group memberships
+                    </Label>
+                    <Smartphone className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    If you've already joined groups using your phone number, we can connect them to your account
+                  </p>
+                  
+                  {connectExisting && (
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-connect">Your WhatsApp Number</Label>
+                      <Input
+                        id="whatsapp-connect"
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        placeholder="+541188889999"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the same number you used when joining groups
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>

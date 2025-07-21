@@ -46,19 +46,14 @@ const Index = () => {
   const addMemberToGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // Redirect to auth if not logged in
-        window.location.href = '/auth';
-        return;
-      }
       if (!selectedGroup) throw new Error("No group selected");
 
+      // For anonymous users, insert without user_id
       const { error } = await supabase
         .from("group_members")
         .insert({
           group_id: selectedGroup.id,
-          user_id: user.id,
+          user_id: null, // Anonymous user
           name: memberData.name,
           birthday: memberData.birthday,
           likes: memberData.likes,
@@ -107,6 +102,15 @@ const Index = () => {
       setMemberData({ name: "", birthday: "", likes: "", gift_wishes: "", whatsapp_number: "" });
       setSelectedGroup(null);
       
+      // Store group membership info in localStorage for anonymous users
+      const anonymousGroups = JSON.parse(localStorage.getItem('anonymousGroups') || '[]');
+      anonymousGroups.push({
+        groupId: selectedGroup.id,
+        groupName: selectedGroup.name,
+        whatsappNumber: memberData.whatsapp_number
+      });
+      localStorage.setItem('anonymousGroups', JSON.stringify(anonymousGroups));
+      
       // Redirect to groups page
       setTimeout(() => {
         window.location.href = '/groups';
@@ -123,7 +127,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <LanguageToggle />
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <LanguageToggle />
+        <Button 
+          variant="outline" 
+          onClick={() => window.location.href = '/auth'}
+          className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+        >
+          Sign In
+        </Button>
+      </div>
       <Hero />
       <HowItWorks />
       <WhatsAppInfo />

@@ -5,6 +5,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Groups from "./pages/Groups";
+import MyGroups from "./pages/MyGroups";
 import Profile from "./pages/Profile";
 import JoinGroup from "./pages/JoinGroup";
 import NotFound from "./pages/NotFound";
@@ -17,7 +18,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/groups" element={<Groups />} />
+          <Route path="/groups" element={<MyGroups />} />
+          <Route path="/create" element={<Groups />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/join" element={<JoinGroup />} />
           <Route path="*" element={<NotFound />} />
