@@ -218,63 +218,20 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
-      // Check if user already has member data from other groups
-      const { data: existingMemberData, error: memberError } = await supabase
-        .from("group_members")
-        .select("name, birthday, likes, gift_wishes, whatsapp_number")
-        .eq("user_id", session.user.id)
-        .limit(1)
-        .single();
+      // Always ask the group creator to fill in their member data
+      // This ensures they can update/confirm their information for this specific group
+      setSelectedGroup(data);
+      setMemberDialogOpen(true);
 
-      if (existingMemberData && !memberError) {
-        console.log("Found existing member data, auto-adding to group:", existingMemberData);
-        
-        // User already has member data, add them directly to the new group
-        const { error: addMemberError } = await supabase
-          .from("group_members")
-          .update({
-            name: existingMemberData.name,
-            birthday: existingMemberData.birthday,
-            likes: existingMemberData.likes,
-            gift_wishes: existingMemberData.gift_wishes,
-            whatsapp_number: existingMemberData.whatsapp_number
-          })
-          .eq("group_id", data.id)
-          .eq("user_id", session.user.id);
+      // Reset form and close dialog
+      setCreateDialogOpen(false);
+      setNewGroupName("");
+      setNewGroupDescription("");
 
-        if (addMemberError) {
-          console.error("Error updating member with existing data:", addMemberError);
-        }
-
-        // Reset form and close dialog
-        setCreateDialogOpen(false);
-        setNewGroupName("");
-        setNewGroupDescription("");
-
-        // Refresh groups list
-        await loadGroups();
-
-        toast({
-          title: "Group Created Successfully! 🎉",
-          description: "You've been automatically added with your existing member information.",
-        });
-      } else {
-        console.log("No existing member data found, asking for user input");
-        
-        // First time user, ask for member information
-        setSelectedGroup(data);
-        setMemberDialogOpen(true);
-
-        // Reset form and close dialog
-        setCreateDialogOpen(false);
-        setNewGroupName("");
-        setNewGroupDescription("");
-
-        toast({
-          title: "Group Created Successfully! 🎉",
-          description: "Now please add your member information to join the group.",
-        });
-      }
+      toast({
+        title: "Group Created Successfully! 🎉",
+        description: "Now please add your member information to complete the setup.",
+      });
 
     } catch (error: any) {
       console.error("Create group error:", error);
@@ -774,9 +731,17 @@ const Groups = () => {
         <DialogContent className="max-w-md">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
-              <DialogTitle>Join {selectedGroup?.name}</DialogTitle>
+              <DialogTitle>
+                {selectedGroup && currentUser && selectedGroup.created_by === currentUser.id 
+                  ? `Complete Setup for ${selectedGroup.name}`
+                  : `Join ${selectedGroup?.name}`
+                }
+              </DialogTitle>
               <DialogDescription>
-                Please fill in your details to join the group
+                {selectedGroup && currentUser && selectedGroup.created_by === currentUser.id 
+                  ? "As the group admin, please add your details to complete the group setup"
+                  : "Please fill in your details to join the group"
+                }
               </DialogDescription>
             </div>
             <LanguageToggle />
@@ -843,7 +808,12 @@ const Groups = () => {
                 <p>Example: +541188889999, +447123456789</p>
               </div>
             </div>
-            <Button type="submit" className="w-full">Join Group</Button>
+            <Button type="submit" className="w-full">
+              {selectedGroup && currentUser && selectedGroup.created_by === currentUser.id 
+                ? "Complete Group Setup"
+                : "Join Group"
+              }
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
