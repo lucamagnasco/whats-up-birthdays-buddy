@@ -218,15 +218,15 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
-      // Reset form and close dialog
-      setCreateDialogOpen(false);
-      setNewGroupName("");
-      setNewGroupDescription("");
-
       // Set the newly created group as selected and open member dialog
       // so the creator can add their member information
       setSelectedGroup(data);
       setMemberDialogOpen(true);
+
+      // Reset form and close dialog
+      setCreateDialogOpen(false);
+      setNewGroupName("");
+      setNewGroupDescription("");
 
       toast({
         title: "Group Created Successfully! 🎉",
