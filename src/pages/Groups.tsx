@@ -322,10 +322,41 @@ const Groups = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Successfully joined the group!",
-      });
+      // Send WhatsApp confirmation message
+      try {
+        const { error: whatsappError } = await supabase.functions.invoke('send-whatsapp-message', {
+          body: {
+            template: {
+              phone_number: memberData.whatsapp_number,
+              template_name: 'group_confirmation',
+              language: 'es_AR',
+              template_parameters: [memberData.name, selectedGroup.name]
+            },
+            templateId: 'ff20074d-77d5-48dc-a158-ee4babe3f8a9'
+          }
+        });
+
+        if (whatsappError) {
+          console.error('WhatsApp message error:', whatsappError);
+          toast({
+            title: "Warning",
+            description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Success! 🎉",
+            description: "Successfully joined the group! You should receive a WhatsApp confirmation message shortly. If you don't receive it within a few minutes, please check your phone number.",
+          });
+        }
+      } catch (whatsappError: any) {
+        console.error('WhatsApp message error:', whatsappError);
+        toast({
+          title: "Warning",
+          description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
+          variant: "destructive",
+        });
+      }
 
       setMemberDialogOpen(false);
       setMemberData({ name: "", birthday: "", likes: "", gift_wishes: "", whatsapp_number: "" });
