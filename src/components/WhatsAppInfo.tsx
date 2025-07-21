@@ -1,20 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Clock, Gift, Smartphone, Shield, Zap } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const WhatsAppInfo = () => {
+  const { t } = useLanguage();
+
   return (
-    <section className="py-20 bg-gradient-to-br from-celebration/5 to-birthday/5">
+    <section className="py-24 bg-gradient-to-br from-celebration/5 to-birthday/5 relative overflow-hidden">
       <div className="container mx-auto px-4">
-        <div className="text-center space-y-4 mb-16">
+        <div className="text-center space-y-6 mb-16">
           <div className="flex justify-center items-center gap-4 mb-4">
             <MessageCircle className="w-12 h-12 text-celebration" />
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground">
-              WhatsApp Reminders
+            <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">
+              {t('whatsapp.title')}
             </h2>
           </div>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Get personalized birthday reminders with gift suggestions sent directly to your WhatsApp
+            {t('whatsapp.description')}
           </p>
         </div>
 

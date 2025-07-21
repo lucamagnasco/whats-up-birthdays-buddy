@@ -1,22 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Calendar, Gift, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const CTA = () => {
+  const { t } = useLanguage();
+
   return (
     <section className="py-20 bg-gradient-to-r from-primary/10 via-birthday/10 to-celebration/10">
       <div className="container mx-auto px-4">
-        <Card className="border-0 shadow-2xl bg-gradient-to-br from-card to-muted/20 overflow-hidden">
+        <Card className="border-0 shadow-elevation bg-gradient-card overflow-hidden">
           <CardContent className="p-12 text-center">
             <div className="space-y-8 max-w-4xl mx-auto">
               <div className="space-y-4">
-                <h2 className="text-3xl md:text-5xl font-bold text-foreground">
-                  Ready to Make Every
-                  <span className="text-primary block">Birthday Special?</span>
+                <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">
+                  {t('cta.title')}
                 </h2>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                  Join thousands of groups already using Birthday Buddy to celebrate 
-                  their friends and family. Start your group today!
+                  {t('cta.description')}
                 </p>
               </div>
 
@@ -45,10 +46,10 @@ const CTA = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button size="lg" variant="celebration" className="text-lg px-8 py-6 shadow-lg" onClick={() => window.location.href = '/auth'}>
+                <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group" onClick={() => window.location.href = '/auth'}>
                   <Users className="mr-2" />
-                  Create Your Group Now
-                  <ArrowRight className="ml-2" />
+                  {t('cta.getStarted')}
+                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
                   <Calendar className="mr-2" />
