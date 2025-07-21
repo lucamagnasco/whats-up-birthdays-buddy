@@ -1,259 +1,206 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Check, AlertCircle, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, ExternalLink, CheckCircle } from "lucide-react";
 
-interface PlugitConfig {
-  serverUrl: string;
-  authMethod: 'none' | 'bearer' | 'oauth2';
-  bearerToken?: string;
-  endpoints: Array<{
-    name: string;
-    path: string;
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  }>;
-}
-
-const PlugitIntegration = () => {
-  const [config, setConfig] = useState<PlugitConfig>({
-    serverUrl: "",
-    authMethod: 'none',
-    bearerToken: "",
-    endpoints: []
-  });
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
+const KapsoIntegration = () => {
+  const [apiKey, setApiKey] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSaveConfig = async () => {
+  useEffect(() => {
+    loadConfiguration();
+  }, []);
+
+  const loadConfiguration = async () => {
     try {
-      // Test connection to the plugit.chat agent
-      const testUrl = `${config.serverUrl}/health`;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return;
 
-      if (config.authMethod === 'bearer' && config.bearerToken) {
-        headers.Authorization = `Bearer ${config.bearerToken}`;
-      }
+      const { data, error } = await supabase
+        .from('whatsapp_config')
+        .select('*')
+        .eq('user_id', session.session.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      const response = await fetch(testUrl, {
-        method: 'GET',
-        headers,
-        mode: 'cors'
-      });
+      if (error) throw error;
 
-      if (response.ok) {
+      if (data) {
+        setApiKey(data.api_key);
+        setPhoneNumber(data.phone_number);
         setIsConnected(true);
-        setIsConfigOpen(false);
-        toast({
-          title: "Connected Successfully! 🎉",
-          description: "Plugit.chat agent is now connected and ready to send birthday reminders",
-        });
-      } else {
-        throw new Error('Connection failed');
       }
     } catch (error) {
-      toast({
-        title: "Connection Failed",
-        description: "Unable to connect to the Plugit.chat agent. Please check your configuration.",
-        variant: "destructive",
-      });
+      console.error('Error loading configuration:', error);
     }
   };
 
-  const addEndpoint = () => {
-    setConfig(prev => ({
-      ...prev,
-      endpoints: [...prev.endpoints, { name: "", path: "", method: 'POST' }]
-    }));
+  const handleSaveConfiguration = async () => {
+    if (!apiKey.trim() || !phoneNumber.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) throw new Error('Not authenticated');
+
+      // First, deactivate any existing configurations
+      await supabase
+        .from('whatsapp_config')
+        .update({ is_active: false })
+        .eq('user_id', session.session.user.id);
+
+      // Then insert the new configuration
+      const { error } = await supabase
+        .from('whatsapp_config')
+        .insert({
+          user_id: session.session.user.id,
+          api_key: apiKey,
+          phone_number: phoneNumber,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      setIsConnected(true);
+      toast({
+        title: "Success",
+        description: "Kapso configuration saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving configuration:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save configuration",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateEndpoint = (index: number, field: string, value: string) => {
-    setConfig(prev => ({
-      ...prev,
-      endpoints: prev.endpoints.map((endpoint, i) => 
-        i === index ? { ...endpoint, [field]: value } : endpoint
-      )
-    }));
-  };
+  const handleTestConnection = async () => {
+    setTestLoading(true);
+    try {
+      const response = await supabase.functions.invoke('send-whatsapp-message', {
+        body: {
+          template: {
+            phone_number: phoneNumber,
+            template_name: "test_template",
+            language: "en",
+            template_parameters: ["Test"]
+          }
+        }
+      });
 
-  const removeEndpoint = (index: number) => {
-    setConfig(prev => ({
-      ...prev,
-      endpoints: prev.endpoints.filter((_, i) => i !== index)
-    }));
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Test Successful",
+        description: "WhatsApp connection is working properly",
+      });
+    } catch (error) {
+      console.error('Test failed:', error);
+      toast({
+        title: "Test Failed",
+        description: "Could not send test message. Check your configuration.",
+        variant: "destructive",
+      });
+    } finally {
+      setTestLoading(false);
+    }
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Settings className="w-5 h-5" />
-          Plugit.chat Integration
-          {isConnected && <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Connected</Badge>}
+          <MessageSquare className="h-5 w-5" />
+          Kapso WhatsApp Integration
+          {isConnected && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Check className="h-3 w-3" />
+              Connected
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>
-          Connect your birthday reminder system to Plugit.chat for automated WhatsApp notifications
+          Configure Kapso to send automated WhatsApp birthday reminders
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-          <div>
-            <p className="font-medium">Agent Status</p>
-            <p className="text-sm text-muted-foreground">
-              {isConnected ? "Connected to Plugit.chat agent" : "Not connected"}
-            </p>
-          </div>
-          <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-            <DialogTrigger asChild>
-              <Button variant={isConnected ? "outline" : "default"}>
-                {isConnected ? "Reconfigure" : "Configure"}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Configure Plugit.chat Agent</DialogTitle>
-                <DialogDescription>
-                  Set up the connection to your Plugit.chat agent for automated birthday reminders
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="server-url">Server URL *</Label>
-                  <Input
-                    id="server-url"
-                    value={config.serverUrl}
-                    onChange={(e) => setConfig(prev => ({ ...prev, serverUrl: e.target.value }))}
-                    placeholder="https://plugit.chat/agents/n1zmFi50hku5V2xHhHF5"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter your Plugit.chat agent URL
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Authentication Method</Label>
-                  <div className="flex gap-2">
-                    {(['none', 'bearer', 'oauth2'] as const).map((method) => (
-                      <Button
-                        key={method}
-                        variant={config.authMethod === method ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setConfig(prev => ({ ...prev, authMethod: method }))}
-                        disabled={method === 'oauth2'}
-                      >
-                        {method === 'none' ? 'None' : method === 'bearer' ? 'Bearer Token' : 'OAuth2 (coming soon)'}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {config.authMethod === 'bearer' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="bearer-token">Bearer Token</Label>
-                    <Input
-                      id="bearer-token"
-                      type="password"
-                      value={config.bearerToken}
-                      onChange={(e) => setConfig(prev => ({ ...prev, bearerToken: e.target.value }))}
-                      placeholder="Enter your bearer token"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>API Endpoints</Label>
-                    <Button variant="outline" size="sm" onClick={addEndpoint}>
-                      Add Endpoint
-                    </Button>
-                  </div>
-                  
-                  {config.endpoints.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                      <p>No endpoints configured</p>
-                      <p className="text-xs">Add endpoints to enable specific functionality</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {config.endpoints.map((endpoint, index) => (
-                        <div key={index} className="flex gap-2 items-end">
-                          <div className="flex-1">
-                            <Input
-                              placeholder="Endpoint name"
-                              value={endpoint.name}
-                              onChange={(e) => updateEndpoint(index, 'name', e.target.value)}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Input
-                              placeholder="/api/endpoint"
-                              value={endpoint.path}
-                              onChange={(e) => updateEndpoint(index, 'path', e.target.value)}
-                            />
-                          </div>
-                          <select
-                            value={endpoint.method}
-                            onChange={(e) => updateEndpoint(index, 'method', e.target.value)}
-                            className="px-3 py-2 border rounded-md"
-                          >
-                            <option value="GET">GET</option>
-                            <option value="POST">POST</option>
-                            <option value="PUT">PUT</option>
-                            <option value="DELETE">DELETE</option>
-                          </select>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeEndpoint(index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-between pt-4">
-                  <Button variant="outline" onClick={() => setIsConfigOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSaveConfig}>
-                    Save Configuration
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+        <div className="space-y-2">
+          <Label htmlFor="apiKey">Kapso API Key</Label>
+          <Input
+            id="apiKey"
+            type="password"
+            placeholder="Enter your Kapso API key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
         </div>
 
-        {isConnected && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Integration Features:</p>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Automated birthday reminders via WhatsApp</li>
-              <li>• Gift suggestion AI based on member preferences</li>
-              <li>• Group notification scheduling</li>
-              <li>• Custom message templates</li>
-            </ul>
-            <Button variant="outline" size="sm" className="mt-2">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Open Plugit.chat Dashboard
+        <div className="space-y-2">
+          <Label htmlFor="phoneNumber">WhatsApp Business Phone Number</Label>
+          <Input
+            id="phoneNumber"
+            type="tel"
+            placeholder="+1234567890"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleSaveConfiguration}
+            className="flex-1"
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : "Save Configuration"}
+          </Button>
+          
+          {isConnected && (
+            <Button 
+              onClick={handleTestConnection}
+              variant="outline"
+              disabled={testLoading}
+            >
+              <Send className="h-4 w-4" />
             </Button>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <h4 className="font-medium flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Requirements:
+          </h4>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            <li>• Active Kapso account with WhatsApp Business API</li>
+            <li>• Pre-approved message templates in Meta</li>
+            <li>• Valid WhatsApp Business phone number</li>
+            <li>• Kapso API key from your dashboard</li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );
 };
 
-export default PlugitIntegration;
+export default KapsoIntegration;

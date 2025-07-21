@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Users, Copy, Calendar, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import PlugitIntegration from "@/components/PlugitIntegration";
+import KapsoIntegration from "@/components/PlugitIntegration";
 
 interface Group {
   id: string;
@@ -514,7 +514,7 @@ const Groups = () => {
       {groups.length > 0 && (
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-6">Automation & AI</h2>
-          <PlugitIntegration />
+          <KapsoIntegration />
         </div>
       )}
 

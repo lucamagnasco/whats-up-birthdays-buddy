@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      birthday_messages: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          group_id: string
+          id: string
+          language: string | null
+          member_id: string
+          recipient_number: string
+          sent_at: string | null
+          status: string | null
+          template_name: string
+          template_parameters: Json | null
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          group_id: string
+          id?: string
+          language?: string | null
+          member_id: string
+          recipient_number: string
+          sent_at?: string | null
+          status?: string | null
+          template_name: string
+          template_parameters?: Json | null
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          group_id?: string
+          id?: string
+          language?: string | null
+          member_id?: string
+          recipient_number?: string
+          sent_at?: string | null
+          status?: string | null
+          template_name?: string
+          template_parameters?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birthday_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birthday_messages_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           birthday: string
@@ -85,6 +145,45 @@ export type Database = {
         }
         Relationships: []
       }
+      message_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          name: string
+          template_name: string
+          template_parameters: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          name: string
+          template_name: string
+          template_parameters?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          name?: string
+          template_name?: string
+          template_parameters?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -112,11 +211,45 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_config: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          phone_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          phone_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          phone_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_upcoming_birthdays: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_group_ids: {
         Args: { user_uuid: string }
         Returns: string[]
