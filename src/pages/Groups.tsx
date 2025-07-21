@@ -218,62 +218,19 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
-      // Automatically add the creator as the first member
-      try {
-        console.log("Adding creator as first member...");
-        
-        // Check if user has a profile first
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("full_name, whatsapp_number")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (profileError) {
-          console.log("Profile not found or error:", profileError);
-        } else {
-          console.log("Profile data:", profileData);
-        }
-
-        // Add creator as first member
-        const memberData = {
-          group_id: data.id,
-          user_id: session.user.id,
-          name: profileData?.full_name || session.user.email?.split('@')[0] || "Creator",
-          birthday: "1990-01-01", // Default birthday, user can update later
-          likes: "",
-          gift_wishes: "",
-          whatsapp_number: profileData?.whatsapp_number || ""
-        };
-        
-        console.log("Inserting member data:", memberData);
-        
-        const { error: memberError } = await supabase
-          .from("group_members")
-          .insert(memberData);
-
-        if (memberError) {
-          console.error("Could not auto-add creator as member:", memberError);
-        } else {
-          console.log("Creator automatically added as first member");
-        }
-      } catch (autoJoinError) {
-        console.error("Auto-join failed:", autoJoinError);
-      }
-
       // Reset form and close dialog
       setCreateDialogOpen(false);
       setNewGroupName("");
       setNewGroupDescription("");
 
-      // Refresh groups list
-      console.log("Refreshing groups list...");
-      await loadGroups();
-      console.log("Groups list refreshed");
+      // Set the newly created group as selected and open member dialog
+      // so the creator can add their member information
+      setSelectedGroup(data);
+      setMemberDialogOpen(true);
 
       toast({
         title: "Group Created Successfully! 🎉",
-        description: "You've been automatically added as the first member.",
+        description: "Now please add your member information to join the group.",
       });
 
     } catch (error: any) {
