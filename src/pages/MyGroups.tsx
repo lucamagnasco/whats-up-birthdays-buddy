@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ interface AnonymousGroup {
 }
 
 const MyGroups = () => {
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -277,7 +279,7 @@ const MyGroups = () => {
                   variant="outline" 
                   size="sm" 
                   className="text-xs sm:text-sm"
-                  onClick={() => window.location.href = '/create-group'}
+                  onClick={() => navigate('/create-group')}
                 >
                   <Plus className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">Create Group</span>
@@ -308,8 +310,8 @@ const MyGroups = () => {
                   <Button
                     size="sm"
                     onClick={() => {
-                      // Navigate to profile page instead of opening first group
-                      window.location.href = '/profile';
+                      // Navigate to profile page using React Router
+                      navigate('/profile');
                     }}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white"
                   >
@@ -330,7 +332,7 @@ const MyGroups = () => {
               <Button 
                 variant="link" 
                 className="p-0 h-auto text-blue-700 underline ml-1"
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => navigate('/auth')}
               >
                 Sign up here
               </Button>
@@ -365,7 +367,7 @@ const MyGroups = () => {
                 <p className="text-muted-foreground">No groups yet</p>
                 <Button 
                   className="mt-2"
-                  onClick={() => window.location.href = '/create-group'}
+                  onClick={() => navigate('/create-group')}
                 >
                   Create your first group
                 </Button>

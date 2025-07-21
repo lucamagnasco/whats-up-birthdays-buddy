@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ interface UserProfile {
 }
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -39,7 +41,7 @@ const Profile = () => {
         if (session?.user) {
           await loadUserProfiles();
         } else {
-          window.location.href = '/auth';
+          navigate('/auth');
         }
       }
     );
@@ -48,12 +50,12 @@ const Profile = () => {
       if (session?.user) {
         loadUserProfiles();
       } else {
-        window.location.href = '/auth';
+        navigate('/auth');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const loadUserProfiles = async () => {
     try {
