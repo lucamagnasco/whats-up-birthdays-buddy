@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Gift, Users, Calendar, MessageCircle, ArrowRight, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import heroImage from "@/assets/hero-messi.jpg";
+import heroImage from "@/assets/messi-celebration.jpg";
 
 const Hero = () => {
   const { t } = useLanguage();
