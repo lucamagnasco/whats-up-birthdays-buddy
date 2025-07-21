@@ -104,6 +104,13 @@ const Groups = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      console.log("User ID:", user.id);
+      console.log("Creating group with data:", {
+        name: newGroupName,
+        description: newGroupDescription,
+        created_by: user.id
+      });
+
       const { data, error } = await supabase
         .from("groups")
         .insert({
@@ -114,7 +121,10 @@ const Groups = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Insert error:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
