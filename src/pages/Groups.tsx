@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Users, Copy, Calendar, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import KapsoIntegration from "@/components/PlugitIntegration";
 
 interface Group {
   id: string;
@@ -25,6 +24,7 @@ interface GroupMember {
   name: string;
   birthday: string;
   likes: string;
+  gift_wishes: string;
   whatsapp_number: string;
 }
 
@@ -46,6 +46,7 @@ const Groups = () => {
     name: "",
     birthday: "",
     likes: "",
+    gift_wishes: "",
     whatsapp_number: ""
   });
 
@@ -315,6 +316,7 @@ const Groups = () => {
           name: memberData.name,
           birthday: memberData.birthday,
           likes: memberData.likes,
+          gift_wishes: memberData.gift_wishes,
           whatsapp_number: memberData.whatsapp_number
         });
 
@@ -326,7 +328,7 @@ const Groups = () => {
       });
 
       setMemberDialogOpen(false);
-      setMemberData({ name: "", birthday: "", likes: "", whatsapp_number: "" });
+      setMemberData({ name: "", birthday: "", likes: "", gift_wishes: "", whatsapp_number: "" });
       setSelectedGroup(null);
       loadGroups();
     } catch (error: any) {
@@ -510,17 +512,9 @@ const Groups = () => {
         </div>
       )}
 
-      {/* Plugit.chat Integration Section */}
-      {groups.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6">Automation & AI</h2>
-          <KapsoIntegration />
-        </div>
-      )}
-
       {/* Member Details Dialog */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Join {selectedGroup?.name}</DialogTitle>
             <DialogDescription>
@@ -559,6 +553,19 @@ const Groups = () => {
               />
               <p className="text-xs text-muted-foreground">
                 This helps others choose gifts for you
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="member-gift-wishes">Gift Wishes</Label>
+              <Textarea
+                id="member-gift-wishes"
+                value={memberData.gift_wishes}
+                onChange={(e) => setMemberData({...memberData, gift_wishes: e.target.value})}
+                placeholder="Specific things you need or want as gifts..."
+                className="h-20"
+              />
+              <p className="text-xs text-muted-foreground">
+                Tell your friends what you specifically need or want
               </p>
             </div>
             <div className="space-y-2">
@@ -606,6 +613,12 @@ const Groups = () => {
                           <div className="flex items-start gap-2 text-sm">
                             <Gift className="w-4 h-4 mt-0.5 text-gift" />
                             <span><strong>Likes:</strong> {member.likes}</span>
+                          </div>
+                        )}
+                        {member.gift_wishes && (
+                          <div className="flex items-start gap-2 text-sm">
+                            <Gift className="w-4 h-4 mt-0.5 text-primary" />
+                            <span><strong>Gift Wishes:</strong> {member.gift_wishes}</span>
                           </div>
                         )}
                         {member.whatsapp_number && (
