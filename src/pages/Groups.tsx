@@ -134,77 +134,32 @@ const Groups = () => {
 
   const createGroup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newGroupName.trim()) return;
+
     setLoading(true);
 
     try {
-      // Get the current session and ensure we have a valid access token
+      // Check if user is authenticated
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) throw sessionError;
-      if (!session?.user || !session?.access_token) {
+      if (!session?.user) {
         throw new Error("Authentication required. Please sign in again.");
       }
 
-      console.log("Session user ID:", session.user.id);
-      console.log("Access token present:", !!session.access_token);
-      
-      // Wait a moment to ensure the auth context is fully established
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log("Creating group with data:", {
-        name: newGroupName,
-        description: newGroupDescription,
-        created_by: session.user.id
-      });
-
-      // Try the insert with explicit authentication context
-      let { data, error } = await supabase
+      // Insert group (created_by is now handled automatically by the database)
+      const { data, error } = await supabase
         .from("groups")
         .insert({
           name: newGroupName,
           description: newGroupDescription,
-          created_by: session.user.id,
         })
         .select()
         .single();
 
       if (error) {
         console.error("Insert error:", error);
-        console.error("Error code:", error.code);
-        console.error("Error details:", error.details);
-        
-        // If RLS policy violation, try refreshing the session and retry once
-        if (error.code === "42501") {
-          console.log("RLS policy violation, refreshing session and retrying...");
-          
-          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (refreshError || !refreshedSession) {
-            throw new Error("Session refresh failed. Please sign in again.");
-          }
-          
-          console.log("Session refreshed, retrying insert...");
-          
-          const retryResult = await supabase
-            .from("groups")
-            .insert({
-              name: newGroupName,
-              description: newGroupDescription,
-              created_by: refreshedSession.user.id,
-            })
-            .select()
-            .single();
-            
-          if (retryResult.error) {
-            console.error("Retry insert error:", retryResult.error);
-            throw retryResult.error;
-          }
-          
-          console.log("Group created successfully on retry:", retryResult.data);
-          data = retryResult.data;
-        } else {
-          throw error;
-        }
+        throw error;
       }
 
       console.log("Group created successfully:", data);
