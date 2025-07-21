@@ -129,7 +129,8 @@ const Groups = () => {
         .select(`
           *,
           group_members(count)
-        `);
+        `)
+        .is("deactivated_at", null);
 
       if (error) throw error;
 
@@ -545,8 +546,8 @@ const Groups = () => {
       setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
 
       toast({
-        title: "Group Deactivated",
-        description: "The group has been deactivated and is no longer visible.",
+        title: "Group deleted successfully",
+        description: "The group has been removed from your list.",
       });
 
       // Refresh from server to ensure consistency
