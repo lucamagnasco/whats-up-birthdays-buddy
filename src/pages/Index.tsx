@@ -127,16 +127,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="absolute top-4 right-4 z-10 flex gap-3">
-        <Button 
-          variant="outline" 
-          onClick={() => window.location.href = '/auth'}
-          className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-all duration-200"
-        >
-          Sign In
-        </Button>
-        <LanguageToggle variant="inline" />
-      </div>
+      <LanguageToggle />
+      
+      {/* Sign-in button - positioned for optimal UX */}
+      <Button 
+        variant="outline" 
+        onClick={() => window.location.href = '/auth'}
+        className="fixed top-4 right-20 z-40 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all duration-200 font-medium"
+      >
+        Sign In
+      </Button>
+      
       <Hero />
       <HowItWorks />
       <WhatsAppInfo />

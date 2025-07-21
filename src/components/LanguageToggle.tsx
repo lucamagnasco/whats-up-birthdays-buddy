@@ -2,25 +2,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Globe } from 'lucide-react';
 
-interface LanguageToggleProps {
-  variant?: 'fixed' | 'inline';
-  className?: string;
-}
-
-const LanguageToggle = ({ variant = 'fixed', className = '' }: LanguageToggleProps) => {
+const LanguageToggle = () => {
   const { language, setLanguage } = useLanguage();
-
-  const baseClasses = "z-50 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20";
-  const variantClasses = variant === 'fixed' 
-    ? "fixed top-4 right-4" 
-    : "";
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
       onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-      className={`${baseClasses} ${variantClasses} ${className}`}
+      className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border border-border hover:bg-accent"
     >
       <Globe className="w-4 h-4 mr-2" />
       {language === 'en' ? 'ES' : 'EN'}
