@@ -346,56 +346,103 @@ const Groups = () => {
       console.log("Adding member to group:", selectedGroup.id);
       console.log("Member data:", memberData);
 
-      const { error } = await supabase
+      // Check if this user is already a member (from auto-trigger)
+      const { data: existingMember, error: checkError } = await supabase
         .from("group_members")
-        .insert({
-          group_id: selectedGroup.id,
-          user_id: user.id,
-          name: memberData.name,
-          birthday: memberData.birthday,
-          likes: memberData.likes,
-          gift_wishes: memberData.gift_wishes,
-          whatsapp_number: memberData.whatsapp_number
-        });
+        .select("*")
+        .eq("group_id", selectedGroup.id)
+        .eq("user_id", user.id)
+        .single();
 
-      if (error) {
-        console.error("Insert member error:", error);
-        throw error;
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error("Error checking existing member:", checkError);
+        throw checkError;
       }
 
-      console.log("Member added successfully");
+      if (existingMember) {
+        console.log("Updating existing member:", existingMember.id);
+        // Update existing member with real data
+        const { error } = await supabase
+          .from("group_members")
+          .update({
+            name: memberData.name,
+            birthday: memberData.birthday,
+            likes: memberData.likes,
+            gift_wishes: memberData.gift_wishes,
+            whatsapp_number: memberData.whatsapp_number
+          })
+          .eq("id", existingMember.id);
+
+        if (error) {
+          console.error("Update member error:", error);
+          throw error;
+        }
+      } else {
+        console.log("Creating new member");
+        // Create new member
+        const { error } = await supabase
+          .from("group_members")
+          .insert({
+            group_id: selectedGroup.id,
+            user_id: user.id,
+            name: memberData.name,
+            birthday: memberData.birthday,
+            likes: memberData.likes,
+            gift_wishes: memberData.gift_wishes,
+            whatsapp_number: memberData.whatsapp_number
+          });
+
+        if (error) {
+          console.error("Insert member error:", error);
+          throw error;
+        }
+      }
+
+      console.log("Member added/updated successfully");
 
       // Send WhatsApp confirmation message
-      try {
-        const { error: whatsappError } = await supabase.functions.invoke('send-whatsapp-message', {
-          body: {
-            template: {
-              phone_number: memberData.whatsapp_number,
-              template_name: 'group_confirmation',
-              language: 'es_AR',
-              template_parameters: [memberData.name, selectedGroup.name]
-            },
-            templateId: 'ff20074d-77d5-48dc-a158-ee4babe3f8a9'
-          }
-        });
+      if (memberData.whatsapp_number && memberData.whatsapp_number.trim()) {
+        try {
+          console.log("Sending WhatsApp confirmation to:", memberData.whatsapp_number);
+          
+          const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-message', {
+            body: {
+              template: {
+                phone_number: memberData.whatsapp_number,
+                template_name: 'group_confirmation',
+                language: 'es_AR',
+                template_parameters: [memberData.name, selectedGroup.name]
+              },
+              templateId: 'ff20074d-77d5-48dc-a158-ee4babe3f8a9'
+            }
+          });
 
-        if (whatsappError) {
+          console.log("WhatsApp function result:", { whatsappResult, whatsappError });
+
+          if (whatsappError) {
+            console.error('WhatsApp message error:', whatsappError);
+            toast({
+              title: "Success! 🎉",
+              description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
+            });
+          } else {
+            console.log("WhatsApp message sent successfully");
+            toast({
+              title: "Success! 🎉",
+              description: "Successfully joined the group! You should receive a WhatsApp confirmation message shortly.",
+            });
+          }
+        } catch (whatsappError: any) {
           console.error('WhatsApp message error:', whatsappError);
           toast({
             title: "Success! 🎉",
-            description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
-          });
-        } else {
-          toast({
-            title: "Success! 🎉",
-            description: "Successfully joined the group! You should receive a WhatsApp confirmation message shortly. If you don't receive it within a few minutes, please check your phone number.",
+            description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation.",
           });
         }
-      } catch (whatsappError: any) {
-        console.error('WhatsApp message error:', whatsappError);
+      } else {
         toast({
           title: "Success! 🎉",
-          description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
+          description: "Successfully joined the group!",
         });
       }
 

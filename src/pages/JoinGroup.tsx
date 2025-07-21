@@ -53,18 +53,26 @@ const JoinGroup = () => {
 
   const fetchGroupInfo = async () => {
     try {
+      console.log("Fetching group info for invite code:", inviteCode);
+      
       const { data: group, error } = await supabase
         .from("groups")
         .select("id, name, description")
         .eq("invite_code", inviteCode)
+        .eq("deactivated_at", null) // Only active groups
         .single();
 
+      console.log("Group query result:", { group, error });
+
       if (error || !group) {
-        throw new Error("Invalid invite code");
+        console.error("Group not found or error:", error);
+        throw new Error("Invalid invite code or group no longer exists");
       }
 
+      console.log("Group found:", group);
       setGroup(group);
     } catch (error: any) {
+      console.error("Fetch group info error:", error);
       toast({
         title: "Error",
         description: error.message,
