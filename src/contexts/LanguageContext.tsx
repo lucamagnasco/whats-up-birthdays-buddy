@@ -70,7 +70,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Hero
     'hero.title': 'Nunca mas te olvides de un',
     'hero.titleHighlight': 'Cumpleaños!',
-    'hero.description': 'Crea grupos con amigos, comparte cumpleaños e ideas de regalos, y recibe recordatorios personalizados por WhatsApp. Haciendo las celebraciones memorables, un grupo a la vez.',
+    'hero.description': 'Dejaste de usar facebook y te olvidas de los cumpleaños?? Crea grupos con amigos y recibí recordatorios de whatsapp con gustos y lista de deseos personalizados.',
     'hero.createGroup': 'Crear Tu Grupo',
     'hero.joinGroup': 'Unirse a un Grupo',
     'hero.groupManagement': 'Gestión de Grupos',
