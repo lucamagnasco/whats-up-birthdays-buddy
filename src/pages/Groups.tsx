@@ -176,6 +176,8 @@ const Groups = () => {
         throw new Error("Authentication required. Please sign in again.");
       }
 
+      console.log("Creating group for user:", session.user.id);
+
       // Insert group (created_by is now handled automatically by the database)
       const { data, error } = await supabase
         .from("groups")
@@ -193,6 +195,14 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
+      // Reset form and close dialog
+      setCreateDialogOpen(false);
+      setNewGroupName("");
+      setNewGroupDescription("");
+
+      // Refresh groups list
+      await loadGroups();
+
       toast({
         title: "Group Created Successfully! 🎉",
         description: "Would you like to join as the first member?",
@@ -207,10 +217,6 @@ const Groups = () => {
         ),
       });
 
-      setCreateDialogOpen(false);
-      setNewGroupName("");
-      setNewGroupDescription("");
-      loadGroups();
     } catch (error: any) {
       console.error("Create group error:", error);
       toast({
@@ -391,6 +397,18 @@ const Groups = () => {
 
   const deleteGroup = async (groupId: string) => {
     try {
+      // First delete all group members
+      const { error: membersError } = await supabase
+        .from("group_members")
+        .delete()
+        .eq("group_id", groupId);
+
+      if (membersError) {
+        console.warn("Error deleting group members:", membersError);
+        // Continue with group deletion even if members deletion fails
+      }
+
+      // Then delete the group
       const { error } = await supabase
         .from("groups")
         .delete()
@@ -398,13 +416,18 @@ const Groups = () => {
 
       if (error) throw error;
 
+      // Update local state immediately
+      setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
+
       toast({
         title: "Group Deleted",
         description: "The group has been permanently deleted.",
       });
 
-      loadGroups();
+      // Refresh from server to ensure consistency
+      await loadGroups();
     } catch (error: any) {
+      console.error("Delete group error:", error);
       toast({
         title: "Error",
         description: "Failed to delete group: " + error.message,
