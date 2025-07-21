@@ -10,7 +10,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations = {
+const translations: Record<Language, Record<string, string>> = {
   en: {
     // Hero
     'hero.title': 'Never Miss a',
@@ -116,7 +116,6 @@ const translations = {
 };
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  console.log('LanguageProvider rendering');
   const [language, setLanguage] = useState<Language>('en');
 
   const t = (key: string): string => {

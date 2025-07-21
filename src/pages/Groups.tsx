@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Users, Copy, Calendar, Gift } from "lucide-react";
+import { Plus, Users, Copy, Calendar, Gift, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import UserMenu from "@/components/UserMenu";
 
 interface Group {
   id: string;
@@ -16,6 +18,7 @@ interface Group {
   description: string;
   invite_code: string;
   created_at: string;
+  created_by: string;
   member_count?: number;
 }
 
@@ -36,6 +39,7 @@ const Groups = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const { toast } = useToast();
 
   // Form states
@@ -55,6 +59,7 @@ const Groups = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
+          setCurrentUser(session.user);
           // Only load groups when we have a valid session
           await loadGroups();
           
@@ -76,6 +81,7 @@ const Groups = () => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        setCurrentUser(session.user);
         loadGroups();
         
         // Check for invite parameter in URL
@@ -380,6 +386,30 @@ const Groups = () => {
     });
   };
 
+  const deleteGroup = async (groupId: string) => {
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .delete()
+        .eq("id", groupId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Group Deleted",
+        description: "The group has been permanently deleted.",
+      });
+
+      loadGroups();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete group: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'long',
@@ -398,7 +428,9 @@ const Groups = () => {
           <h1 className="text-3xl font-bold text-foreground">My Groups</h1>
           <p className="text-muted-foreground">Manage your birthday reminder groups</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <UserMenu />
+          <div className="flex gap-3">
           <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -467,6 +499,7 @@ const Groups = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </div>
 
@@ -519,6 +552,32 @@ const Groups = () => {
                   <Calendar className="w-4 h-4 mr-2" />
                   View Members
                 </Button>
+                {currentUser && group.created_by === currentUser.id && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Group</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete "{group.name}"? This action cannot be undone. All members and data will be permanently removed.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteGroup(group.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete Group
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </CardContent>
           </Card>

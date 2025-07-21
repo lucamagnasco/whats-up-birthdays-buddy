@@ -11,23 +11,19 @@ import NotFound from "./pages/NotFound";
 import './index.css'
 
 function App() {
-  console.log('App component rendering');
   return (
     <LanguageProvider>
-      <div>
-        <p>Language Provider is active</p>
-        <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/groups" element={<Groups />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/join" element={<JoinGroup />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          <Toaster />
-        </BrowserRouter>
-      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/join" element={<JoinGroup />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
     </LanguageProvider>
   );
 }
