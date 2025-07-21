@@ -59,8 +59,8 @@ const JoinGroup = () => {
         .from("groups")
         .select("id, name, description")
         .eq("invite_code", inviteCode)
-        .eq("deactivated_at", null) // Only active groups
-        .single();
+        .is("deactivated_at", null) // Only active groups
+        .maybeSingle();
 
       console.log("Group query result:", { group, error });
 
@@ -177,7 +177,7 @@ const JoinGroup = () => {
               language: 'es_AR',
               template_parameters: [memberData.name, group.name]
             },
-            templateId: 'ff20074d-77d5-48dc-a158-ee4babe3f8a9'
+            templateId: '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c'
           }
         });
 
