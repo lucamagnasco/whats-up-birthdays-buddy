@@ -225,11 +225,21 @@ const Groups = () => {
 
       // Reload groups to show the new group
       await loadGroups();
-
+      
+      console.log("Setting selected group:", data);
+      console.log("Group data structure:", JSON.stringify(data, null, 2));
+      
       // Always ask the group creator to fill in their member data
       // This ensures they can update/confirm their information for this specific group
       setSelectedGroup(data);
-      setMemberDialogOpen(true);
+      
+      console.log("Selected group set, waiting before opening dialog...");
+      
+      // Wait for React state to update before opening dialog
+      setTimeout(() => {
+        console.log("Opening member dialog for group:", data?.name);
+        setMemberDialogOpen(true);
+      }, 200);
 
       toast({
         title: "Group Created Successfully! 🎉",
@@ -339,10 +349,14 @@ const Groups = () => {
   const addMemberToGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Form submitted with selectedGroup:", selectedGroup);
+      console.log("Current memberData:", memberData);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       if (!selectedGroup) {
-        console.error("No group selected", selectedGroup);
+        console.error("No group selected at form submission", selectedGroup);
+        console.error("This should not happen - checking state...");
         throw new Error("No group selected");
       }
 
