@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import Hero from "@/components/Hero";
-import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import WhatsAppInfo from "@/components/WhatsAppInfo";
 import CTA from "@/components/CTA";
@@ -79,7 +78,7 @@ const Index = () => {
               language: 'es_AR',
               template_parameters: [memberData.name, selectedGroup.name]
             },
-            templateId: 'ff20074d-77d5-48dc-a158-ee4babe3f8a9'
+            templateId: '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c'
           }
         });
 
@@ -126,7 +125,6 @@ const Index = () => {
     <div className="min-h-screen">
       <LanguageToggle />
       <Hero />
-      <Features />
       <HowItWorks />
       <WhatsAppInfo />
       <CTA />
