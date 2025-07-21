@@ -226,25 +226,39 @@ const Groups = () => {
       // Reload groups to show the new group
       await loadGroups();
       
-      console.log("Setting selected group:", data);
-      console.log("Group data structure:", JSON.stringify(data, null, 2));
+      // Check if user needs to complete profile data
+      const { data: memberData } = await supabase
+        .from('group_members')
+        .select('*')
+        .eq('group_id', data.id)
+        .eq('user_id', session.user.id)
+        .single();
       
-      // Always ask the group creator to fill in their member data
-      // This ensures they can update/confirm their information for this specific group
-      setSelectedGroup(data);
+      console.log("Member data for creator:", memberData);
       
-      console.log("Selected group set, waiting before opening dialog...");
-      
-      // Wait for React state to update before opening dialog
-      setTimeout(() => {
-        console.log("Opening member dialog for group:", data?.name);
-        setMemberDialogOpen(true);
-      }, 200);
-
-      toast({
-        title: "Group Created Successfully! 🎉",
-        description: "Now please add your member information to complete the setup.",
-      });
+      // If the user has default/empty data, ask them to complete their profile
+      if (memberData && (
+        memberData.name === 'Group Creator' || 
+        memberData.birthday === '1990-01-01' ||
+        !memberData.whatsapp_number ||
+        memberData.whatsapp_number === ''
+      )) {
+        // Set the group and ask for profile completion
+        setSelectedGroup(data);
+        setTimeout(() => {
+          setMemberDialogOpen(true);
+        }, 200);
+        
+        toast({
+          title: "Group Created Successfully! 🎉",
+          description: "Please complete your profile information to enable birthday reminders.",
+        });
+      } else {
+        toast({
+          title: "Group Created Successfully! 🎉",
+          description: "Your group is ready to use.",
+        });
+      }
 
     } catch (error: any) {
       console.error("Create group error:", error);
