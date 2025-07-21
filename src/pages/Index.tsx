@@ -129,10 +129,11 @@ const Index = () => {
     <div className="min-h-screen">
       <LanguageToggle />
       
-      {/* Sign-in button - orange and visible in top-right */}
+      {/* Sign-in button - white with orange hover, better spacing */}
       <Button 
+        variant="outline"
         onClick={() => window.location.href = '/auth'}
-        className="fixed top-4 right-16 z-40 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+        className="fixed top-4 right-20 z-40 bg-white border border-orange-200 text-gray-900 hover:bg-orange-500 hover:text-white hover:border-orange-500 font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
       >
         Sign In
       </Button>
