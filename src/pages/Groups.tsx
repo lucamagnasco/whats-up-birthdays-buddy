@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Users, Copy, Calendar, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import PlugitIntegration from "@/components/PlugitIntegration";
 
 interface Group {
   id: string;
@@ -55,6 +56,15 @@ const Groups = () => {
         if (session?.user) {
           // Only load groups when we have a valid session
           await loadGroups();
+          
+          // Check for invite parameter in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const inviteParam = urlParams.get('invite');
+          if (inviteParam) {
+            handleJoinGroup(inviteParam);
+            // Remove the invite parameter from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         } else {
           // Redirect to auth if no session
           window.location.href = '/auth';
@@ -66,6 +76,15 @@ const Groups = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         loadGroups();
+        
+        // Check for invite parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteParam = urlParams.get('invite');
+        if (inviteParam) {
+          handleJoinGroup(inviteParam);
+          // Remove the invite parameter from URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       } else {
         window.location.href = '/auth';
       }
@@ -165,8 +184,17 @@ const Groups = () => {
       console.log("Group created successfully:", data);
 
       toast({
-        title: "Success",
-        description: "Group created successfully!",
+        title: "Group Created Successfully! 🎉",
+        description: "Would you like to join as the first member?",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleJoinGroup(data.invite_code)}
+          >
+            Join Group
+          </Button>
+        ),
       });
 
       setCreateDialogOpen(false);
@@ -182,6 +210,50 @@ const Groups = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleJoinGroup = async (inviteCode: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // First, find the group by invite code
+      const { data: group, error: groupError } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("invite_code", inviteCode)
+        .single();
+
+      if (groupError || !group) {
+        throw new Error("Invalid invite code");
+      }
+
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from("group_members")
+        .select("*")
+        .eq("group_id", group.id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingMember) {
+        toast({
+          title: "Already a member",
+          description: "You are already a member of this group",
+        });
+        return;
+      }
+
+      // Set selected group and open member form
+      setSelectedGroup(group);
+      setMemberDialogOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -266,11 +338,12 @@ const Groups = () => {
     }
   };
 
-  const copyInviteCode = (inviteCode: string) => {
-    navigator.clipboard.writeText(inviteCode);
+  const copyInviteLink = (inviteCode: string) => {
+    const inviteUrl = `${window.location.origin}/groups?invite=${inviteCode}`;
+    navigator.clipboard.writeText(inviteUrl);
     toast({
       title: "Copied!",
-      description: "Invite code copied to clipboard",
+      description: "Invite link copied to clipboard",
     });
   };
 
@@ -380,14 +453,21 @@ const Groups = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">Invite Code</p>
-                  <p className="text-xs text-muted-foreground font-mono">{group.invite_code}</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Invite Link</p>
+                  <a 
+                    href={`${window.location.origin}/groups?invite=${group.invite_code}`}
+                    className="text-xs text-primary hover:underline font-mono break-all"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {window.location.origin}/groups?invite={group.invite_code}
+                  </a>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyInviteCode(group.invite_code)}
+                  onClick={() => copyInviteLink(group.invite_code)}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -427,6 +507,14 @@ const Groups = () => {
               Join Group
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Plugit.chat Integration Section */}
+      {groups.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-6">Automation & AI</h2>
+          <PlugitIntegration />
         </div>
       )}
 
@@ -474,16 +562,19 @@ const Groups = () => {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="member-whatsapp">WhatsApp Number (Optional)</Label>
+              <Label htmlFor="member-whatsapp">WhatsApp Number *</Label>
               <Input
                 id="member-whatsapp"
                 value={memberData.whatsapp_number}
                 onChange={(e) => setMemberData({...memberData, whatsapp_number: e.target.value})}
                 placeholder="+1234567890"
+                required
               />
-              <p className="text-xs text-muted-foreground">
-                For receiving birthday reminders
-              </p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><strong>Required for birthday reminders!</strong></p>
+                <p>Format: Include country code (e.g., +1 for US, +44 for UK)</p>
+                <p>Example: +1234567890, +447123456789</p>
+              </div>
             </div>
             <Button type="submit" className="w-full">Join Group</Button>
           </form>
