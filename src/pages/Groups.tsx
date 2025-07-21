@@ -821,7 +821,7 @@ const Groups = () => {
               />
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><strong>Required for birthday reminders!</strong></p>
-                <p>Include country code for WhatsApp notifications</p>
+                <p>Include country and zone code for WhatsApp notifications: +5411AAAABBBB</p>
                 <p>Example: +541188889999, +447123456789</p>
               </div>
             </div>

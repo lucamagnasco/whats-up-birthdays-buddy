@@ -273,7 +273,7 @@ const JoinGroup = () => {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Include country code for WhatsApp notifications
+                Include country and zone code for WhatsApp notifications: +5411AAAABBBB
               </p>
             </div>
             
