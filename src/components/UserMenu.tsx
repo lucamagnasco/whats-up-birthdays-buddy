@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserProfile {
@@ -13,6 +14,7 @@ interface UserProfile {
   whatsapp_number: string;
   birthday: string;
   likes: string;
+  gift_wishes: string;
 }
 
 const UserMenu = () => {
@@ -21,7 +23,8 @@ const UserMenu = () => {
     full_name: "", 
     whatsapp_number: "", 
     birthday: "", 
-    likes: "" 
+    likes: "",
+    gift_wishes: ""
   });
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
@@ -48,10 +51,10 @@ const UserMenu = () => {
         console.error("Error loading profile:", profileError);
       }
 
-      // Load latest group member data (for birthday and likes)
+      // Load latest group member data (for birthday, likes, and gift wishes)
       const { data: memberData, error: memberError } = await supabase
         .from("group_members")
-        .select("name, birthday, likes, whatsapp_number")
+        .select("name, birthday, likes, gift_wishes, whatsapp_number")
         .eq("user_id", user.id)
         .order("joined_at", { ascending: false })
         .limit(1)
@@ -66,7 +69,8 @@ const UserMenu = () => {
         full_name: profileData?.full_name || memberData?.name || "",
         whatsapp_number: profileData?.whatsapp_number || memberData?.whatsapp_number || "",
         birthday: memberData?.birthday || "",
-        likes: memberData?.likes || ""
+        likes: memberData?.likes || "",
+        gift_wishes: memberData?.gift_wishes || ""
       });
     } catch (error) {
       console.error("Error loading user profile:", error);
@@ -100,6 +104,7 @@ const UserMenu = () => {
           name: profile.full_name,
           birthday: profile.birthday,
           likes: profile.likes,
+          gift_wishes: profile.gift_wishes,
           whatsapp_number: profile.whatsapp_number
         })
         .eq("user_id", user.id);
@@ -220,15 +225,32 @@ const UserMenu = () => {
 
             <div className="space-y-2">
               <Label htmlFor="likes">Things You Like</Label>
-              <Input
+              <Textarea
                 id="likes"
                 value={profile.likes}
                 onChange={(e) => setProfile({ ...profile, likes: e.target.value })}
                 placeholder="Coffee, books, sports, music, etc."
-                className="text-sm"
+                className="text-sm h-20"
               />
               <p className="text-xs text-muted-foreground">
                 Helps friends choose gifts for you
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gift_wishes">Gift Wishes</Label>
+              <div className="relative">
+                <Textarea
+                  id="gift_wishes"
+                  value={profile.gift_wishes}
+                  onChange={(e) => setProfile({ ...profile, gift_wishes: e.target.value })}
+                  placeholder="Specific things you need or want as gifts..."
+                  className="text-sm h-20"
+                />
+                <Gift className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tell your friends what you specifically need or want
               </p>
             </div>
             
