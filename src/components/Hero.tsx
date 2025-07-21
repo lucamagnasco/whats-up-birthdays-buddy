@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Gift, Users, Calendar, MessageCircle, ArrowRight, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-const heroImageUrl = "/lovable-uploads/bcba4eb2-f94e-4c62-98a4-213d90f47f48.png";
+const heroImageUrl = "/lovable-uploads/d59c27c8-a272-4cbe-b320-54b7ba196619.png";
 
 const Hero = () => {
   const { t } = useLanguage();
