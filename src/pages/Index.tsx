@@ -129,11 +129,10 @@ const Index = () => {
     <div className="min-h-screen">
       <LanguageToggle />
       
-      {/* Sign-in button - positioned in top-left for optimal visibility */}
+      {/* Sign-in button - orange and visible in top-right */}
       <Button 
-        variant="outline" 
         onClick={() => window.location.href = '/auth'}
-        className="fixed top-4 left-4 z-40 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all duration-200 font-medium"
+        className="fixed top-4 right-16 z-40 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
       >
         Sign In
       </Button>
