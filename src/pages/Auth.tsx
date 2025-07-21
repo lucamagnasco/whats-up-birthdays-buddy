@@ -15,8 +15,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [connectExisting, setConnectExisting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<"email" | "whatsapp">("email");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -92,26 +90,12 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      let loginCredentials;
-      
-      if (loginMethod === "email") {
-        loginCredentials = { email, password };
-      } else {
-        // For WhatsApp login, we'll use the WhatsApp number as email with a domain
-        loginCredentials = { 
-          email: `${whatsappNumber.replace(/[^0-9]/g, '')}@whatsapp.birthday-buddy.com`, 
-          password 
-        };
-      }
-
-      const { error } = await supabase.auth.signInWithPassword(loginCredentials);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) throw error;
-
-      // Handle remember me
-      if (rememberMe) {
-        localStorage.setItem('rememberMe', 'true');
-      }
 
       navigate("/groups");
     } catch (error: any) {
@@ -146,52 +130,16 @@ const Auth = () => {
             
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
-                {/* Login method toggle */}
-                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
-                  <Button
-                    type="button"
-                    variant={loginMethod === "email" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setLoginMethod("email")}
-                    className="flex-1"
-                  >
-                    Email
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={loginMethod === "whatsapp" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setLoginMethod("whatsapp")}
-                    className="flex-1"
-                  >
-                    WhatsApp
-                  </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-
-                {loginMethod === "email" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp-signin">WhatsApp Number</Label>
-                    <Input
-                      id="whatsapp-signin"
-                      value={whatsappNumber}
-                      onChange={(e) => setWhatsappNumber(e.target.value)}
-                      placeholder="+541188889999"
-                      required
-                    />
-                  </div>
-                )}
-                
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <Input
@@ -202,19 +150,6 @@ const Auth = () => {
                     required
                   />
                 </div>
-
-                {/* Remember me checkbox */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember-me" 
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  />
-                  <Label htmlFor="remember-me" className="text-sm">
-                    Remember me
-                  </Label>
-                </div>
-
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
