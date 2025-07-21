@@ -260,6 +260,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string[]
       }
+      process_pending_messages: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
