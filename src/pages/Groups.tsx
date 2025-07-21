@@ -218,20 +218,63 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
-      // Set the newly created group as selected and open member dialog
-      // so the creator can add their member information
-      setSelectedGroup(data);
-      setMemberDialogOpen(true);
+      // Check if user already has member data from other groups
+      const { data: existingMemberData, error: memberError } = await supabase
+        .from("group_members")
+        .select("name, birthday, likes, gift_wishes, whatsapp_number")
+        .eq("user_id", session.user.id)
+        .limit(1)
+        .single();
 
-      // Reset form and close dialog
-      setCreateDialogOpen(false);
-      setNewGroupName("");
-      setNewGroupDescription("");
+      if (existingMemberData && !memberError) {
+        console.log("Found existing member data, auto-adding to group:", existingMemberData);
+        
+        // User already has member data, add them directly to the new group
+        const { error: addMemberError } = await supabase
+          .from("group_members")
+          .update({
+            name: existingMemberData.name,
+            birthday: existingMemberData.birthday,
+            likes: existingMemberData.likes,
+            gift_wishes: existingMemberData.gift_wishes,
+            whatsapp_number: existingMemberData.whatsapp_number
+          })
+          .eq("group_id", data.id)
+          .eq("user_id", session.user.id);
 
-      toast({
-        title: "Group Created Successfully! 🎉",
-        description: "Now please add your member information to join the group.",
-      });
+        if (addMemberError) {
+          console.error("Error updating member with existing data:", addMemberError);
+        }
+
+        // Reset form and close dialog
+        setCreateDialogOpen(false);
+        setNewGroupName("");
+        setNewGroupDescription("");
+
+        // Refresh groups list
+        await loadGroups();
+
+        toast({
+          title: "Group Created Successfully! 🎉",
+          description: "You've been automatically added with your existing member information.",
+        });
+      } else {
+        console.log("No existing member data found, asking for user input");
+        
+        // First time user, ask for member information
+        setSelectedGroup(data);
+        setMemberDialogOpen(true);
+
+        // Reset form and close dialog
+        setCreateDialogOpen(false);
+        setNewGroupName("");
+        setNewGroupDescription("");
+
+        toast({
+          title: "Group Created Successfully! 🎉",
+          description: "Now please add your member information to join the group.",
+        });
+      }
 
     } catch (error: any) {
       console.error("Create group error:", error);
