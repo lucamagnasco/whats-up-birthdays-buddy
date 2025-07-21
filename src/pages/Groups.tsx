@@ -24,7 +24,7 @@ interface GroupMember {
   name: string;
   birthday: string;
   likes: string;
-  gift_wishes: string;
+  gift_wishes?: string;
   whatsapp_number: string;
 }
 
