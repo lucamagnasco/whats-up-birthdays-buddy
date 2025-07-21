@@ -131,8 +131,17 @@ const UserMenu = () => {
         }
       });
 
+      // Clean up session storage too
+      Object.keys(sessionStorage || {}).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
       await supabase.auth.signOut({ scope: 'global' });
-      window.location.href = '/auth';
+      
+      // Force page reload to clear all state
+      window.location.reload();
     } catch (error) {
       console.error("Logout error:", error);
       // Force redirect even if logout fails

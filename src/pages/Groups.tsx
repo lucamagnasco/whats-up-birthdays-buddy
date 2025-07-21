@@ -195,6 +195,36 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
+      // Automatically add the creator as the first member
+      try {
+        // Check if user has a profile first
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name, whatsapp_number")
+          .eq("user_id", session.user.id)
+          .single();
+
+        // Add creator as first member
+        const { error: memberError } = await supabase
+          .from("group_members")
+          .insert({
+            group_id: data.id,
+            user_id: session.user.id,
+            name: profileData?.full_name || session.user.email?.split('@')[0] || "Creator",
+            birthday: "1990-01-01", // Default birthday, user can update later
+            likes: "",
+            whatsapp_number: profileData?.whatsapp_number || ""
+          });
+
+        if (memberError) {
+          console.warn("Could not auto-add creator as member:", memberError);
+        } else {
+          console.log("Creator automatically added as first member");
+        }
+      } catch (autoJoinError) {
+        console.warn("Auto-join failed:", autoJoinError);
+      }
+
       // Reset form and close dialog
       setCreateDialogOpen(false);
       setNewGroupName("");
@@ -205,16 +235,7 @@ const Groups = () => {
 
       toast({
         title: "Group Created Successfully! 🎉",
-        description: "Would you like to join as the first member?",
-        action: (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleJoinGroup(data.invite_code)}
-          >
-            Join Group
-          </Button>
-        ),
+        description: "You've been automatically added as the first member.",
       });
 
     } catch (error: any) {

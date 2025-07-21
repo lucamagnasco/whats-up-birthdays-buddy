@@ -21,11 +21,20 @@ const Hero = () => {
                 <span className="text-sm font-medium text-primary">Made for Celebrations</span>
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-black text-foreground leading-[0.9] tracking-tight">
-                {t('hero.title')}
-                <span className="bg-gradient-to-r from-primary via-birthday to-gift bg-clip-text text-transparent block mt-2">
-                  {t('hero.titleHighlight')}
-                </span>
+              <h1 className="text-5xl md:text-7xl font-black text-foreground leading-[0.9] tracking-tight flex items-center gap-6">
+                <div>
+                  {t('hero.title')}
+                  <span className="bg-gradient-to-r from-primary via-birthday to-gift bg-clip-text text-transparent block mt-2">
+                    {t('hero.titleHighlight')}
+                  </span>
+                </div>
+                <div className="hidden lg:block">
+                  <img 
+                    src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=200&h=200&fit=crop&crop=face" 
+                    alt="Celebration moment"
+                    className="w-24 h-24 rounded-full object-cover shadow-elevation border-4 border-white/50"
+                  />
+                </div>
               </h1>
               
               <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
