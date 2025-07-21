@@ -338,7 +338,13 @@ const Groups = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      if (!selectedGroup) throw new Error("No group selected");
+      if (!selectedGroup) {
+        console.error("No group selected", selectedGroup);
+        throw new Error("No group selected");
+      }
+
+      console.log("Adding member to group:", selectedGroup.id);
+      console.log("Member data:", memberData);
 
       const { error } = await supabase
         .from("group_members")
@@ -352,7 +358,12 @@ const Groups = () => {
           whatsapp_number: memberData.whatsapp_number
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Insert member error:", error);
+        throw error;
+      }
+
+      console.log("Member added successfully");
 
       // Send WhatsApp confirmation message
       try {
@@ -371,9 +382,8 @@ const Groups = () => {
         if (whatsappError) {
           console.error('WhatsApp message error:', whatsappError);
           toast({
-            title: "Warning",
+            title: "Success! 🎉",
             description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
-            variant: "destructive",
           });
         } else {
           toast({
@@ -384,17 +394,17 @@ const Groups = () => {
       } catch (whatsappError: any) {
         console.error('WhatsApp message error:', whatsappError);
         toast({
-          title: "Warning",
+          title: "Success! 🎉",
           description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation. Please check if your number is correct.",
-          variant: "destructive",
         });
       }
 
       setMemberDialogOpen(false);
       setMemberData({ name: "", birthday: "", likes: "", gift_wishes: "", whatsapp_number: "" });
       setSelectedGroup(null);
-      loadGroups();
+      await loadGroups();
     } catch (error: any) {
+      console.error("Add member error:", error);
       toast({
         title: "Error",
         description: error.message,
