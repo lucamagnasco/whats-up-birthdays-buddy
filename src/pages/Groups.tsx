@@ -165,31 +165,45 @@ const Groups = () => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
 
+    console.log("Starting group creation process...");
     setLoading(true);
 
     try {
       // Check if user is authenticated
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw sessionError;
+      }
       if (!session?.user) {
+        console.error("No user session found");
         throw new Error("Authentication required. Please sign in again.");
       }
 
       console.log("Creating group for user:", session.user.id);
+      console.log("Group name:", newGroupName);
+      console.log("Group description:", newGroupDescription);
 
-      // Insert group (created_by is now handled automatically by the database)
+      // Insert group with explicit created_by
       const { data, error } = await supabase
         .from("groups")
         .insert({
           name: newGroupName,
           description: newGroupDescription,
+          created_by: session.user.id
         })
         .select()
         .single();
 
       if (error) {
         console.error("Insert error:", error);
+        console.error("Error details:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
@@ -197,32 +211,45 @@ const Groups = () => {
 
       // Automatically add the creator as the first member
       try {
+        console.log("Adding creator as first member...");
+        
         // Check if user has a profile first
-        const { data: profileData } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("full_name, whatsapp_number")
           .eq("user_id", session.user.id)
           .single();
 
+        if (profileError) {
+          console.log("Profile not found or error:", profileError);
+        } else {
+          console.log("Profile data:", profileData);
+        }
+
         // Add creator as first member
+        const memberData = {
+          group_id: data.id,
+          user_id: session.user.id,
+          name: profileData?.full_name || session.user.email?.split('@')[0] || "Creator",
+          birthday: "1990-01-01", // Default birthday, user can update later
+          likes: "",
+          gift_wishes: "",
+          whatsapp_number: profileData?.whatsapp_number || ""
+        };
+        
+        console.log("Inserting member data:", memberData);
+        
         const { error: memberError } = await supabase
           .from("group_members")
-          .insert({
-            group_id: data.id,
-            user_id: session.user.id,
-            name: profileData?.full_name || session.user.email?.split('@')[0] || "Creator",
-            birthday: "1990-01-01", // Default birthday, user can update later
-            likes: "",
-            whatsapp_number: profileData?.whatsapp_number || ""
-          });
+          .insert(memberData);
 
         if (memberError) {
-          console.warn("Could not auto-add creator as member:", memberError);
+          console.error("Could not auto-add creator as member:", memberError);
         } else {
           console.log("Creator automatically added as first member");
         }
       } catch (autoJoinError) {
-        console.warn("Auto-join failed:", autoJoinError);
+        console.error("Auto-join failed:", autoJoinError);
       }
 
       // Reset form and close dialog
@@ -231,7 +258,9 @@ const Groups = () => {
       setNewGroupDescription("");
 
       // Refresh groups list
+      console.log("Refreshing groups list...");
       await loadGroups();
+      console.log("Groups list refreshed");
 
       toast({
         title: "Group Created Successfully! 🎉",
@@ -246,6 +275,7 @@ const Groups = () => {
         variant: "destructive",
       });
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   };
@@ -418,13 +448,44 @@ const Groups = () => {
 
   const deleteGroup = async (groupId: string) => {
     try {
+      console.log("Attempting to delete group:", groupId);
+      
+      // Check current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User not authenticated");
+      }
+      console.log("Current user ID:", user.id);
+      
+      // Check if user owns this group
+      const { data: groupData, error: groupError } = await supabase
+        .from("groups")
+        .select("created_by, name")
+        .eq("id", groupId)
+        .single();
+        
+      if (groupError) {
+        console.error("Error fetching group:", groupError);
+        throw groupError;
+      }
+      
+      console.log("Group data:", groupData);
+      console.log("User owns group:", groupData.created_by === user.id);
+      
+      if (groupData.created_by !== user.id) {
+        throw new Error("You can only delete groups you created");
+      }
+
       // Soft delete: set deactivated_at timestamp
       const { error } = await supabase
         .from("groups")
         .update({ deactivated_at: new Date().toISOString() })
         .eq("id", groupId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Update error:", error);
+        throw error;
+      }
 
       // Update local state immediately
       setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
