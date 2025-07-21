@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Gift, Users, Calendar, MessageCircle, ArrowRight, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import heroImage from "@/assets/hero-birthday.jpg";
+import heroImage from "@/assets/hero-messi.jpg";
 
 const Hero = () => {
   const { t } = useLanguage();
@@ -92,7 +92,7 @@ const Hero = () => {
             <div className="relative rounded-3xl overflow-hidden shadow-elevation bg-gradient-to-br from-white to-gray-50">
               <img 
                 src={heroImage} 
-                alt="Birthday celebration with friends"
+                alt="Messi celebration with teammates"
                 className="w-full h-auto object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
