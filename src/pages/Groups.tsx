@@ -372,7 +372,7 @@ const Groups = () => {
   };
 
   const copyInviteLink = (inviteCode: string) => {
-    const inviteUrl = `${window.location.origin}/groups?invite=${inviteCode}`;
+    const inviteUrl = `${window.location.origin}/join?invite=${inviteCode}`;
     navigator.clipboard.writeText(inviteUrl);
     toast({
       title: "Copied!",
@@ -489,12 +489,12 @@ const Groups = () => {
                 <div className="flex-1">
                   <p className="text-sm font-medium">Invite Link</p>
                   <a 
-                    href={`${window.location.origin}/groups?invite=${group.invite_code}`}
+                    href={`${window.location.origin}/join?invite=${group.invite_code}`}
                     className="text-xs text-primary hover:underline font-mono break-all"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {window.location.origin}/groups?invite={group.invite_code}
+                    {window.location.origin}/join?invite={group.invite_code}
                   </a>
                 </div>
                 <Button

@@ -5,19 +5,21 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Groups from "./pages/Groups";
 import Profile from "./pages/Profile";
+import JoinGroup from "./pages/JoinGroup";
 import NotFound from "./pages/NotFound";
 import './index.css'
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/groups" element={<Groups />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/join" element={<JoinGroup />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       <Toaster />
     </BrowserRouter>
   );
