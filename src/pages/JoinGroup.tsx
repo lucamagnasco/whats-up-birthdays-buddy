@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Calendar, Gift } from "lucide-react";
+import { Users, Calendar, Gift, MessageCircle } from "lucide-react";
 
 interface Group {
   id: string;
@@ -21,6 +22,7 @@ const JoinGroup = () => {
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const { toast } = useToast();
   
   // Member data form
@@ -133,22 +135,28 @@ const JoinGroup = () => {
           console.error('WhatsApp message error:', whatsappError);
           toast({
             title: "Welcome! 🎉",
-            description: "You've successfully joined the group! You can sign up later to manage your groups. (WhatsApp confirmation couldn't be sent - please check your number)",
+            description: "You've successfully joined the group! Check your WhatsApp for confirmation.",
+            duration: 10000,
           });
         } else {
           toast({
             title: "Welcome! 🎉",
-            description: "You've successfully joined the group! You should receive a WhatsApp confirmation shortly. You can sign up later to manage your groups.",
+            description: "You've successfully joined the group! Check your WhatsApp for confirmation.",
+            duration: 10000,
           });
         }
       } catch (whatsappError: any) {
         console.error('WhatsApp message error:', whatsappError);
         toast({
           title: "Welcome! 🎉",
-          description: "You've successfully joined the group! You can sign up later to manage your groups. (WhatsApp confirmation couldn't be sent)",
+          description: "You've successfully joined the group! Check your WhatsApp for confirmation.",
+          duration: 10000,
         });
       }
-      navigate('/');
+      // Show success dialog with WhatsApp info and support link
+      setTimeout(() => {
+        setShowSuccessDialog(true);
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -281,6 +289,55 @@ const JoinGroup = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="w-[95vw] max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-center">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              ¡Bienvenido al grupo!
+            </DialogTitle>
+            <DialogDescription className="text-center space-y-4">
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="font-medium text-green-800 mb-2">
+                  📱 Vas a recibir un mensaje de WhatsApp de confirmación
+                </p>
+                <p className="text-sm text-green-700">
+                  Revisá tu WhatsApp en los próximos minutos para confirmar que te uniste al grupo correctamente.
+                </p>
+              </div>
+              
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  ¿No recibiste el código?
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    window.open('https://wa.me/541154191677?text=Hola,%20no%20recibí%20el%20código%20de%20confirmación%20para%20unirme%20al%20grupo', '_blank');
+                  }}
+                  className="w-full"
+                >
+                  📞 Notificanos por WhatsApp
+                </Button>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-4">
+            <Button 
+              onClick={() => {
+                setShowSuccessDialog(false);
+                navigate('/');
+              }}
+              className="flex-1"
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
