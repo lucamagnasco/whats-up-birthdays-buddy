@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, ArrowLeft } from "lucide-react";
+import { Users, ArrowLeft, Copy, MessageCircle, User } from "lucide-react";
 
 const CreateGroup = () => {
   const [groupData, setGroupData] = useState({
@@ -16,8 +17,37 @@ const CreateGroup = () => {
     invite_code: ""
   });
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [createdGroup, setCreatedGroup] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          // Not authenticated, redirect to auth with create context
+          sessionStorage.setItem('redirect_to', '/create-group');
+          sessionStorage.setItem('auth_context', 'create');
+          navigate('/auth?context=create');
+          return;
+        }
+
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate('/auth?context=create');
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuthentication();
+  }, [navigate]);
 
   const generateInviteCode = () => {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -26,50 +56,121 @@ const CreateGroup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("CreateGroup: Starting form submission");
+    console.log("CreateGroup: Current user:", currentUser);
+    console.log("CreateGroup: Group data:", groupData);
+    
+    if (!currentUser) {
+      console.error("CreateGroup: No current user found");
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create a group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!groupData.name.trim()) {
+      toast({
+        title: "Group name required",
+        description: "Please enter a name for your group",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Generate invite code if not provided
-      if (!groupData.invite_code) {
-        generateInviteCode();
-      }
+      const inviteCode = groupData.invite_code || Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      // Create the group (no user_id for anonymous creation)
+      console.log("CreateGroup: About to create group with data:", {
+        name: groupData.name,
+        description: groupData.description,
+        invite_code: inviteCode,
+        created_by: currentUser.id
+      });
+
+      // Create the group with authenticated user
       const { data: group, error } = await supabase
         .from("groups")
         .insert({
           name: groupData.name,
           description: groupData.description,
-          invite_code: groupData.invite_code || Math.random().toString(36).substring(2, 8).toUpperCase(),
-          created_by: null // Anonymous group creation
+          invite_code: inviteCode,
+          created_by: currentUser.id
         })
         .select()
         .single();
 
-      if (error) throw error;
+      console.log("CreateGroup: Supabase response:", { group, error });
 
-      toast({
-        title: "Group Created! 🎉",
-        description: "Your group has been created successfully. Now create an account to manage it.",
-      });
+      if (error) {
+        console.error("CreateGroup: Supabase error:", error);
+        throw error;
+      }
 
-      // Store group info in localStorage
-      localStorage.setItem('pendingGroupId', group.id);
-      localStorage.setItem('pendingGroupName', group.name);
+      console.log("CreateGroup: Group created successfully:", group);
 
-      // Redirect to auth with context
-      navigate("/auth?flow=signup&context=group-created");
+      // Store the created group for the success dialog
+      setCreatedGroup(group);
+      setShowSuccessDialog(true);
 
     } catch (error: any) {
+      console.error("CreateGroup: Caught error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create group",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const copyInviteLink = () => {
+    if (!createdGroup) return;
+    
+    const inviteUrl = `https://whats-up-birthdays-buddy.lovable.app/join?invite=${createdGroup.invite_code}`;
+    navigator.clipboard.writeText(inviteUrl);
+    toast({
+      title: "Copied! 📋",
+      description: "Invite link copied to clipboard",
+    });
+  };
+
+  const shareOnWhatsApp = () => {
+    if (!createdGroup) return;
+    
+    const inviteUrl = `https://whats-up-birthdays-buddy.lovable.app/join?invite=${createdGroup.invite_code}`;
+    const message = `🎉 Join my birthday group "${createdGroup.name}"!\n\nClick this link to join and never miss a birthday again:\n${inviteUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleCompleteProfile = () => {
+    setShowSuccessDialog(false);
+    navigate("/profile");
+  };
+
+  const handleGoToDashboard = () => {
+    setShowSuccessDialog(false);
+    navigate("/groups");
+  };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-celebration/5 to-birthday/5 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-celebration mx-auto mb-4"></div>
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-celebration/5 to-birthday/5 flex items-center justify-center p-4">
@@ -146,6 +247,92 @@ const CreateGroup = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="w-[95vw] max-w-lg mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-center">
+              🎉 Group Created Successfully!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Your group "{createdGroup?.name}" is ready to use!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Invite Link Section */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-foreground">Share Your Group</h4>
+              
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm font-medium mb-2">Invite Link:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border break-all">
+                    https://whats-up-birthdays-buddy.lovable.app/join?invite={createdGroup?.invite_code}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyInviteLink}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={shareOnWhatsApp}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Share on WhatsApp
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={copyInviteLink}
+                  className="flex-1"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
+              </div>
+            </div>
+
+            {/* Profile Completion Reminder */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <User className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-900 mb-1">Complete Your Profile</h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Don't forget to add your birthday and contact info so others can celebrate with you!
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={handleCompleteProfile}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Complete Profile
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleGoToDashboard}
+                className="flex-1"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
@@ -25,6 +26,7 @@ const Index = () => {
     whatsapp_number: ""
   });
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handleOpenJoinDialog = () => {
@@ -48,8 +50,24 @@ const Index = () => {
     try {
       if (!selectedGroup) throw new Error("No group selected");
 
+      // Check if someone with the same WhatsApp number already exists in this group
+      const { data: existingMember } = await supabase
+        .from("group_members")
+        .select("*")
+        .eq("group_id", selectedGroup.id)
+        .eq("whatsapp_number", memberData.whatsapp_number)
+        .maybeSingle();
+
+      if (existingMember) {
+        toast({
+          title: "Already a member",
+          description: "Someone with this WhatsApp number is already in this group",
+        });
+        return;
+      }
+
       // For anonymous users, insert without user_id
-      const { error } = await supabase
+      const { data: newMember, error } = await supabase
         .from("group_members")
         .insert({
           group_id: selectedGroup.id,
@@ -59,7 +77,9 @@ const Index = () => {
           likes: memberData.likes,
           gift_wishes: memberData.gift_wishes,
           whatsapp_number: memberData.whatsapp_number
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -107,6 +127,7 @@ const Index = () => {
       anonymousGroups.push({
         groupId: selectedGroup.id,
         groupName: selectedGroup.name,
+        memberId: newMember.id,
         whatsappNumber: memberData.whatsapp_number
       });
       localStorage.setItem('anonymousGroups', JSON.stringify(anonymousGroups));
@@ -135,7 +156,7 @@ const Index = () => {
         onClick={() => window.location.href = '/auth'}
         className="fixed top-4 right-28 z-40 bg-white border border-orange-200 text-gray-900 hover:bg-orange-500 hover:text-white hover:border-orange-500 font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
       >
-        Sign In
+        {t('index.signIn')}
       </Button>
       
       <Hero />
@@ -153,24 +174,24 @@ const Index = () => {
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Join {selectedGroup?.name}</DialogTitle>
+            <DialogTitle>{t('index.joinTitle')} {selectedGroup?.name}</DialogTitle>
             <DialogDescription>
-              Please fill in your details to join the group
+              {t('index.joinDesc')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={addMemberToGroup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="member-name">Your Name</Label>
+              <Label htmlFor="member-name">{t('index.yourName')}</Label>
               <Input
                 id="member-name"
                 value={memberData.name}
                 onChange={(e) => setMemberData({...memberData, name: e.target.value})}
-                placeholder="Enter your full name"
+                placeholder={t('index.yourNamePlaceholder')}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="member-birthday">Your Birthday</Label>
+              <Label htmlFor="member-birthday">{t('index.yourBirthday')}</Label>
               <Input
                 id="member-birthday"
                 type="date"
@@ -180,47 +201,49 @@ const Index = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="member-likes">Things You Like</Label>
+              <Label htmlFor="member-likes">{t('index.thingsYouLike')}</Label>
               <Textarea
                 id="member-likes"
                 value={memberData.likes}
                 onChange={(e) => setMemberData({...memberData, likes: e.target.value})}
-                placeholder="Coffee, books, sports, music, etc."
+                placeholder={t('index.thingsYouLikePlaceholder')}
                 className="h-20"
               />
               <p className="text-xs text-muted-foreground">
-                This helps others choose gifts for you
+                {t('index.thingsYouLikeHelp')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="member-gift-wishes">Gift Wishes</Label>
+              <Label htmlFor="member-gift-wishes">{t('index.giftWishes')}</Label>
               <Textarea
                 id="member-gift-wishes"
                 value={memberData.gift_wishes}
                 onChange={(e) => setMemberData({...memberData, gift_wishes: e.target.value})}
-                placeholder="Specific things you need or want as gifts..."
+                placeholder={t('index.giftWishesPlaceholder')}
                 className="h-20"
               />
               <p className="text-xs text-muted-foreground">
-                Tell your friends what you specifically need or want
+                {t('index.giftWishesHelp')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="member-whatsapp">WhatsApp Number *</Label>
+              <Label htmlFor="member-whatsapp">{t('index.whatsappNumber')} *</Label>
               <Input
                 id="member-whatsapp"
                 value={memberData.whatsapp_number}
                 onChange={(e) => setMemberData({...memberData, whatsapp_number: e.target.value})}
-                placeholder="+541188889999"
+                placeholder={t('index.whatsappPlaceholder')}
                 required
               />
               <div className="text-xs text-muted-foreground space-y-1">
-                <p><strong>Required for birthday reminders!</strong></p>
-                <p>Include country and zone code for WhatsApp notifications: +5411AAAABBBB</p>
-                <p>Example: +541188889999, +447123456789</p>
+                <p><strong>{t('index.whatsappHelp').split('!')[0]}!</strong></p>
+                <p>{t('index.whatsappHelp').split('!')[1]}</p>
+                <p>{t('index.whatsappExample')}</p>
               </div>
             </div>
-            <Button type="submit" className="w-full">Join Group</Button>
+            <Button type="submit" className="w-full">
+              {t('index.joinGroup')}
+            </Button>
           </form>
         </DialogContent>
       </Dialog>

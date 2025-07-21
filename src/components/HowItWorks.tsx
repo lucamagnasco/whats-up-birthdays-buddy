@@ -12,28 +12,28 @@ const HowItWorks = () => {
       step: "01",
       title: t('howItWorks.step1.title'),
       description: t('howItWorks.step1.description'),
-      details: ["Send invite links to friends", "Easy one-click joining", "Multiple groups supported"],
+      details: t('howItWorks.step1.details').split(','),
       color: "primary"
     },
     {
       step: "02", 
       title: t('howItWorks.step2.title'),
       description: t('howItWorks.step2.description'),
-      details: ["Share your birthday", "List your interests", "Update anytime"],
+      details: t('howItWorks.step2.details').split(','),
       color: "birthday"
     },
     {
       step: "03",
       title: t('howItWorks.step3.title'),
       description: t('howItWorks.step3.description'),
-      details: ["View upcoming birthdays", "See gift ideas", "Plan ahead"],
+      details: t('howItWorks.step3.details').split(','),
       color: "gift"
     },
     {
       step: "04",
       title: t('howItWorks.step4.title'),
       description: t('howItWorks.step4.description'),
-      details: ["Automatic reminders", "Gift recommendations", "Never forget again"],
+      details: t('howItWorks.step4.details').split(','),
       color: "celebration"
     }
   ];
@@ -46,7 +46,7 @@ const HowItWorks = () => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center space-y-6 mb-20">
           <Badge variant="outline" className="px-6 py-2 text-base bg-primary/10 border-primary/20 text-primary">
-            Simple Process
+            {t('common.simpleProcess')}
           </Badge>
           <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">
             {t('howItWorks.title')}

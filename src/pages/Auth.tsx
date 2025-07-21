@@ -23,30 +23,85 @@ const Auth = () => {
   const context = searchParams.get('context');
 
   useEffect(() => {
-    // Check if user is already logged in
+    /*
+      Only redirect when Supabase confirms there is a **valid** authenticated user.
+      Using `getUser()` avoids false-positive redirects caused by stale sessions that may
+      still exist in local storage but are no longer valid on the server.
+    */
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // If there's a pending group, associate it with the user
-        const pendingGroupId = localStorage.getItem('pendingGroupId');
-        if (pendingGroupId) {
-          try {
-            await supabase
-              .from("groups")
-              .update({ created_by: session.user.id })
-              .eq("id", pendingGroupId);
-            
-            localStorage.removeItem('pendingGroupId');
-            localStorage.removeItem('pendingGroupName');
-          } catch (error) {
-            console.error("Error associating group:", error);
-          }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Load remembered email if available
+        const rememberedUser = localStorage.getItem('rememberUser');
+        if (rememberedUser) {
+          setEmailOrPhone(rememberedUser);
+          setRememberMe(true);
         }
+        return; // No valid session – stay on the auth page
+      }
+
+      // Check if there's a specific redirect destination
+      const redirectTo = sessionStorage.getItem('redirect_to');
+      
+      // If there's a pending group, associate it with the user
+      const pendingGroupId = localStorage.getItem('pendingGroupId');
+      if (pendingGroupId) {
+        try {
+          await supabase
+            .from("groups")
+            .update({ created_by: user.id })
+            .eq("id", pendingGroupId);
+
+          localStorage.removeItem('pendingGroupId');
+          localStorage.removeItem('pendingGroupName');
+        } catch (error) {
+          console.error("Error associating group:", error);
+        }
+      }
+
+      // Handle anonymous member upgrade
+      await handleAnonymousUpgrade(user);
+
+      // Redirect based on context
+      if (redirectTo) {
+        sessionStorage.removeItem('redirect_to');
+        sessionStorage.removeItem('auth_context');
+        window.location.href = redirectTo;
+      } else {
         navigate("/groups");
       }
     };
+
     checkUser();
   }, [navigate]);
+
+  const handleAnonymousUpgrade = async (user: any) => {
+    try {
+      // Check for anonymous group memberships in localStorage
+      const anonymousGroups = JSON.parse(localStorage.getItem('anonymousGroups') || '[]');
+      
+      for (const anonymousGroup of anonymousGroups) {
+        if (anonymousGroup.memberId) {
+          // Update the group member to associate with the new user
+          await supabase
+            .from("group_members")
+            .update({ user_id: user.id })
+            .eq("id", anonymousGroup.memberId);
+        }
+      }
+
+      // Clear anonymous groups from localStorage
+      if (anonymousGroups.length > 0) {
+        localStorage.removeItem('anonymousGroups');
+        toast({
+          title: "Account linked! 🎉",
+          description: `Your ${anonymousGroups.length} group membership(s) have been linked to your account.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error upgrading anonymous member:", error);
+    }
+  };
 
   const isEmail = (value: string) => value.includes('@');
 
@@ -57,18 +112,27 @@ const Auth = () => {
     try {
       // For signup, we need an email
       if (!isEmail(emailOrPhone)) {
-        throw new Error("Please use an email address for sign up");
+        throw new Error("Please use a valid email address for sign up");
       }
 
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Provide more user-friendly error messages
+        if (error.message.includes("Password should be at least 6 characters")) {
+          throw new Error("Password must be at least 6 characters long");
+        }
+        if (error.message.includes("User already registered")) {
+          throw new Error("An account with this email already exists. Please try signing in instead.");
+        }
+        throw error;
+      }
 
       // If there's a pending group, associate it with the user
       const pendingGroupId = localStorage.getItem('pendingGroupId');
@@ -86,13 +150,32 @@ const Auth = () => {
         }
       }
 
-      toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to complete your signup.",
-      });
+      // Check if user needs email confirmation
+      if (data.user && !data.session) {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link to complete your signup.",
+        });
+      } else if (data.session) {
+        // User is immediately signed in (confirmations disabled)
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to Birthday Buddy!",
+        });
+        
+        // Handle redirect
+        const redirectTo = sessionStorage.getItem('redirect_to');
+        if (redirectTo) {
+          sessionStorage.removeItem('redirect_to');
+          sessionStorage.removeItem('auth_context');
+          window.location.href = redirectTo;
+        } else {
+          navigate("/groups");
+        }
+      }
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Sign Up Error",
         description: error.message,
         variant: "destructive",
       });
@@ -105,14 +188,33 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
+    console.log("Auth: Starting sign-in process");
+    console.log("Auth: Email/phone:", emailOrPhone);
+
     try {
-      // Try to sign in with the provided email/phone
-      const { error } = await supabase.auth.signInWithPassword({
-        email: emailOrPhone, // Supabase will handle email format
+      // For sign-in, we only support email addresses
+      if (!isEmail(emailOrPhone)) {
+        throw new Error("Please use your email address to sign in. Phone number sign-in is not currently supported.");
+      }
+
+      // Try to sign in with email
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailOrPhone,
         password,
       });
 
-      if (error) throw error;
+      console.log("Auth: Sign-in response:", { data, error });
+
+      if (error) {
+        console.error("Auth: Sign-in error:", error);
+        // Provide more user-friendly error messages
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("Invalid email or password. Please check your credentials and try again.");
+        }
+        throw error;
+      }
+
+      console.log("Auth: Sign-in successful, user:", data.user);
 
       // Store remember me preference
       if (rememberMe) {
@@ -121,10 +223,25 @@ const Auth = () => {
         localStorage.removeItem('rememberUser');
       }
 
-      navigate("/groups");
+      // Check for redirect destination
+      const redirectTo = sessionStorage.getItem('redirect_to');
+      const authContext = sessionStorage.getItem('auth_context');
+      
+      console.log("Auth: Checking redirect - redirectTo:", redirectTo, "context:", authContext);
+
+      if (redirectTo) {
+        console.log("Auth: Redirecting to:", redirectTo);
+        sessionStorage.removeItem('redirect_to');
+        sessionStorage.removeItem('auth_context');
+        window.location.href = redirectTo;
+      } else {
+        console.log("Auth: No redirect, going to /groups");
+        navigate("/groups");
+      }
     } catch (error: any) {
+      console.error("Auth: Sign-in error caught:", error);
       toast({
-        title: "Error",
+        title: "Sign In Error",
         description: error.message,
         variant: "destructive",
       });
@@ -150,11 +267,15 @@ const Auth = () => {
             <Gift className="w-8 h-8 text-celebration" />
           </div>
           <CardTitle className="text-2xl">
-            {context === 'group-created' ? 'Create Your Account' : 'Welcome to Birthday Buddy'}
+            {context === 'create' ? 'Create Your Account' : 
+             context === 'join' ? 'Create Account (Optional)' : 
+             'Welcome to Birthday Buddy'}
           </CardTitle>
           <CardDescription>
-            {context === 'group-created' 
-              ? 'Complete your account to manage your group and access the dashboard'
+            {context === 'create' 
+              ? 'Create your account to manage groups and access the full dashboard'
+              : context === 'join'
+              ? 'Link your group membership to an account for easier management'
               : 'Join groups and never miss a birthday again'
             }
           </CardDescription>
@@ -169,16 +290,17 @@ const Auth = () => {
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email-phone">Email or Phone</Label>
+                  <Label htmlFor="email-phone">Email Address</Label>
                   <Input
                     id="email-phone"
+                    type="email"
                     value={emailOrPhone}
                     onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="your@email.com or +541188889999"
+                    placeholder="your@email.com"
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Enter your email address or WhatsApp number
+                    Enter your email address to sign in
                   </p>
                 </div>
                 <div className="space-y-2">

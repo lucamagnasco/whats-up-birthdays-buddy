@@ -24,10 +24,9 @@ const WhatsAppInfo = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
           <div className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-foreground">How WhatsApp Reminders Work</h3>
+              <h3 className="text-2xl font-bold text-foreground">{t('whatsapp.howItWorksTitle')}</h3>
               <p className="text-lg text-muted-foreground">
-                Our system sends you personalized messages before your friends' birthdays, 
-                including their gift preferences and ideas to make shopping easier.
+                {t('whatsapp.howItWorksDesc')}
               </p>
             </div>
 
@@ -35,24 +34,24 @@ const WhatsAppInfo = () => {
               <div className="flex items-start gap-4 p-4 bg-card rounded-lg border">
                 <Clock className="w-6 h-6 text-birthday mt-1" />
                 <div>
-                  <h4 className="font-semibold">Timely Reminders</h4>
-                  <p className="text-sm text-muted-foreground">Get notified 3 days and 1 day before birthdays</p>
+                  <h4 className="font-semibold">{t('whatsapp.timelyTitle')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('whatsapp.timelyDesc')}</p>
                 </div>
               </div>
               
               <div className="flex items-start gap-4 p-4 bg-card rounded-lg border">
                 <Gift className="w-6 h-6 text-gift mt-1" />
                 <div>
-                  <h4 className="font-semibold">Gift Suggestions</h4>
-                  <p className="text-sm text-muted-foreground">Includes friend's likes and interests for easy gift shopping</p>
+                  <h4 className="font-semibold">{t('whatsapp.giftSuggestionsTitle')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('whatsapp.giftSuggestionsDesc')}</p>
                 </div>
               </div>
               
               <div className="flex items-start gap-4 p-4 bg-card rounded-lg border">
                 <Shield className="w-6 h-6 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Privacy Focused</h4>
-                  <p className="text-sm text-muted-foreground">Only you receive reminders about your friends</p>
+                  <h4 className="font-semibold">{t('whatsapp.privacyTitle')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('whatsapp.privacyDesc')}</p>
                 </div>
               </div>
             </div>
@@ -63,8 +62,8 @@ const WhatsAppInfo = () => {
               <div className="w-16 h-16 bg-celebration/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Smartphone className="w-8 h-8 text-celebration" />
               </div>
-              <CardTitle className="text-xl">Sample WhatsApp Message</CardTitle>
-              <CardDescription>Here's what you'll receive</CardDescription>
+              <CardTitle className="text-xl">{t('whatsapp.sampleTitle')}</CardTitle>
+              <CardDescription>{t('whatsapp.sampleDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-celebration/10 p-4 rounded-lg border-l-4 border-celebration">
@@ -84,15 +83,15 @@ const WhatsAppInfo = () => {
               <div className="flex flex-wrap gap-2 justify-center">
                 <Badge variant="secondary" className="text-xs">
                   <Zap className="w-3 h-3 mr-1" />
-                  Instant delivery
+                  {t('whatsapp.instantDeliveryBadge')}
                 </Badge>
                 <Badge variant="secondary" className="text-xs">
                   <Gift className="w-3 h-3 mr-1" />
-                  Gift ideas included
+                  {t('whatsapp.giftIdeasBadge')}
                 </Badge>
                 <Badge variant="secondary" className="text-xs">
                   <Clock className="w-3 h-3 mr-1" />
-                  Perfect timing
+                  {t('whatsapp.perfectTimingBadge')}
                 </Badge>
               </div>
             </CardContent>
@@ -101,23 +100,22 @@ const WhatsAppInfo = () => {
 
         <div className="bg-card/50 rounded-2xl p-8 border">
           <div className="text-center space-y-4">
-            <h3 className="text-2xl font-bold text-foreground">Setting Up WhatsApp Reminders</h3>
+            <h3 className="text-2xl font-bold text-foreground">{t('whatsapp.setupTitle')}</h3>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              To receive WhatsApp reminders, you'll need to provide your WhatsApp number when joining a group. 
-              We use WhatsApp's Business API to send messages securely and reliably.
+              {t('whatsapp.setupDesc')}
             </p>
             <div className="flex flex-wrap gap-4 justify-center mt-6">
               <Badge variant="outline" className="px-4 py-2">
                 <Shield className="w-4 h-4 mr-2" />
-                Secure & Private
+                {t('whatsapp.securePrivate')}
               </Badge>
               <Badge variant="outline" className="px-4 py-2">
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Official WhatsApp API
+                {t('whatsapp.officialAPI')}
               </Badge>
               <Badge variant="outline" className="px-4 py-2">
                 <Zap className="w-4 h-4 mr-2" />
-                Instant Delivery
+                {t('whatsapp.instantDelivery')}
               </Badge>
             </div>
           </div>

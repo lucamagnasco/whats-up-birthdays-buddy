@@ -26,22 +26,22 @@ const CTA = () => {
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                     <Users className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold">Create Your Group</h3>
-                  <p className="text-sm text-muted-foreground">Start fresh with family or friends</p>
+                  <h3 className="font-semibold">{t('cta.createGroupTitle')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('cta.createGroupDesc')}</p>
                 </div>
                 <div className="text-center space-y-2">
                   <div className="w-16 h-16 bg-birthday/10 rounded-full flex items-center justify-center mx-auto">
                     <Calendar className="w-8 h-8 text-birthday" />
                   </div>
-                  <h3 className="font-semibold">Add Birthdays</h3>
-                  <p className="text-sm text-muted-foreground">Everyone shares their special day</p>
+                  <h3 className="font-semibold">{t('cta.addBirthdaysTitle')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('cta.addBirthdaysDesc')}</p>
                 </div>
                 <div className="text-center space-y-2">
                   <div className="w-16 h-16 bg-gift/10 rounded-full flex items-center justify-center mx-auto">
                     <Gift className="w-8 h-8 text-gift" />
                   </div>
-                  <h3 className="font-semibold">Get Reminders</h3>
-                  <p className="text-sm text-muted-foreground">Never miss a celebration again</p>
+                  <h3 className="font-semibold">{t('cta.getRemindersTitle')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('cta.getRemindersDesc')}</p>
                 </div>
               </div>
 
@@ -53,12 +53,12 @@ const CTA = () => {
                 </Button>
                 <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => (window as any).dispatchEvent(new Event('openJoinGroupDialog'))}>
                   <Calendar className="mr-2" />
-                  Join Existing Group
+                  {t('cta.joinExistingGroup')}
                 </Button>
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Free to use • No credit card required • Set up in under 2 minutes
+                {t('cta.footer')}
               </p>
             </div>
           </CardContent>

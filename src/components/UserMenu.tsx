@@ -147,12 +147,12 @@ const UserMenu = () => {
 
       await supabase.auth.signOut({ scope: 'global' });
       
-      // Force page reload to clear all state
-      window.location.reload();
+      // Redirect to landing page
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
-      // Force redirect even if logout fails
-      window.location.href = '/auth';
+      // Force redirect to landing page even if logout fails
+      window.location.href = '/';
     }
   };
 

@@ -25,12 +25,7 @@ const JoinGroupDialog = ({ open, onOpenChange, onJoinSuccess }: JoinGroupDialogP
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("Please sign in to join a group");
-      }
-
-      // Find the group by invite code
+      // Find the group by invite code (no authentication required)
       const { data: group, error: groupError } = await supabase
         .from("groups")
         .select("*")
@@ -42,25 +37,30 @@ const JoinGroupDialog = ({ open, onOpenChange, onJoinSuccess }: JoinGroupDialogP
         throw new Error("Invalid invite code or group not found");
       }
 
-      // Check if user is already a member
-      const { data: existingMember } = await supabase
-        .from("group_members")
-        .select("*")
-        .eq("group_id", group.id)
-        .eq("user_id", user.id)
-        .single();
+      // Check if user is authenticated to see if they're already a member
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // For authenticated users, check if already a member
+        const { data: existingMember } = await supabase
+          .from("group_members")
+          .select("*")
+          .eq("group_id", group.id)
+          .eq("user_id", user.id)
+          .single();
 
-      if (existingMember) {
-        toast({
-          title: "Already a member",
-          description: "You are already a member of this group",
-        });
-        onOpenChange(false);
-        setInviteCode("");
-        return;
+        if (existingMember) {
+          toast({
+            title: "Already a member",
+            description: "You are already a member of this group",
+          });
+          onOpenChange(false);
+          setInviteCode("");
+          return;
+        }
       }
 
-      // Success - pass group info to parent
+      // Success - pass group info to parent (works for both authenticated and anonymous users)
       onJoinSuccess(group.id, group.name);
       onOpenChange(false);
       setInviteCode("");

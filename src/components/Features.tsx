@@ -12,42 +12,42 @@ const Features = () => {
       title: t('features.createJoin.title'),
       description: t('features.createJoin.description'),
       color: "primary",
-      highlights: ["Easy invite links", "Group management", "Member roles"]
+      highlights: t('features.createJoin.highlights').split(',')
     },
     {
       icon: Calendar,
       title: t('features.tracking.title'),
       description: t('features.tracking.description'),
       color: "birthday",
-      highlights: ["Upcoming birthdays", "Birthday calendar", "Age tracking"]
+      highlights: t('features.tracking.highlights').split(',')
     },
     {
       icon: Gift,
       title: t('features.gifts.title'),
       description: t('features.gifts.description'),
       color: "gift",
-      highlights: ["Personal interests", "Gift ideas", "Wishlist sharing"]
+      highlights: t('features.gifts.highlights').split(',')
     },
     {
       icon: MessageCircle,
       title: t('features.whatsapp.title'),
       description: t('features.whatsapp.description'),
       color: "celebration",
-      highlights: ["Auto reminders", "Gift suggestions", "Personal messages"]
+      highlights: t('features.whatsapp.highlights').split(',')
     },
     {
       icon: Link,
       title: t('features.sharing.title'),
       description: t('features.sharing.description'),
       color: "accent",
-      highlights: ["One-click joining", "Social sharing", "Quick setup"]
+      highlights: t('features.sharing.highlights').split(',')
     },
     {
       icon: Smartphone,
       title: t('features.mobile.title'),
       description: t('features.mobile.description'),
       color: "secondary",
-      highlights: ["Responsive design", "Mobile optimized", "Cross-platform"]
+      highlights: t('features.mobile.highlights').split(',')
     }
   ];
 
@@ -59,7 +59,7 @@ const Features = () => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center space-y-6 mb-20">
           <Badge variant="outline" className="px-6 py-2 text-base bg-primary/10 border-primary/20 text-primary">
-            Power Features
+            {t('common.powerFeatures')}
           </Badge>
           <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">
             {t('features.title')}
