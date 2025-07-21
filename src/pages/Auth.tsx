@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,36 +7,61 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Smartphone } from "lucide-react";
+import { Gift, ArrowLeft } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [connectExisting, setConnectExisting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  
+  const flow = searchParams.get('flow') || 'signin';
+  const context = searchParams.get('context');
 
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        // If there's a pending group, associate it with the user
+        const pendingGroupId = localStorage.getItem('pendingGroupId');
+        if (pendingGroupId) {
+          try {
+            await supabase
+              .from("groups")
+              .update({ created_by: session.user.id })
+              .eq("id", pendingGroupId);
+            
+            localStorage.removeItem('pendingGroupId');
+            localStorage.removeItem('pendingGroupName');
+          } catch (error) {
+            console.error("Error associating group:", error);
+          }
+        }
         navigate("/groups");
       }
     };
     checkUser();
   }, [navigate]);
 
+  const isEmail = (value: string) => value.includes('@');
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // For signup, we need an email
+      if (!isEmail(emailOrPhone)) {
+        throw new Error("Please use an email address for sign up");
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: emailOrPhone,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`
@@ -45,28 +70,19 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // If connectExisting is true and we have a whatsapp number, connect existing memberships
-      if (connectExisting && whatsappNumber && data.user) {
+      // If there's a pending group, associate it with the user
+      const pendingGroupId = localStorage.getItem('pendingGroupId');
+      if (pendingGroupId && data.user) {
         try {
-          // Update anonymous group members with this user_id
-          const { error: updateError } = await supabase
-            .from("group_members")
-            .update({ user_id: data.user.id })
-            .eq("whatsapp_number", whatsappNumber)
-            .is("user_id", null);
-
-          if (updateError) {
-            console.error("Error connecting existing memberships:", updateError);
-          } else {
-            // Clear anonymous groups from localStorage since they're now connected
-            localStorage.removeItem('anonymousGroups');
-            toast({
-              title: "Memberships Connected!",
-              description: "Your existing group memberships have been linked to your account.",
-            });
-          }
-        } catch (connectError) {
-          console.error("Error connecting memberships:", connectError);
+          await supabase
+            .from("groups")
+            .update({ created_by: data.user.id })
+            .eq("id", pendingGroupId);
+          
+          localStorage.removeItem('pendingGroupId');
+          localStorage.removeItem('pendingGroupName');
+        } catch (error) {
+          console.error("Error associating group:", error);
         }
       }
 
@@ -90,12 +106,20 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Try to sign in with the provided email/phone
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailOrPhone, // Supabase will handle email format
         password,
       });
 
       if (error) throw error;
+
+      // Store remember me preference
+      if (rememberMe) {
+        localStorage.setItem('rememberUser', emailOrPhone);
+      } else {
+        localStorage.removeItem('rememberUser');
+      }
 
       navigate("/groups");
     } catch (error: any) {
@@ -113,16 +137,30 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-to-br from-celebration/5 to-birthday/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="absolute top-4 left-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
           <div className="w-16 h-16 bg-celebration/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Gift className="w-8 h-8 text-celebration" />
           </div>
-          <CardTitle className="text-2xl">Welcome to Birthday Buddy</CardTitle>
+          <CardTitle className="text-2xl">
+            {context === 'group-created' ? 'Create Your Account' : 'Welcome to Birthday Buddy'}
+          </CardTitle>
           <CardDescription>
-            Join groups and never miss a birthday again
+            {context === 'group-created' 
+              ? 'Complete your account to manage your group and access the dashboard'
+              : 'Join groups and never miss a birthday again'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={flow} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -131,14 +169,17 @@ const Auth = () => {
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email-phone">Email or Phone</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="email-phone"
+                    value={emailOrPhone}
+                    onChange={(e) => setEmailOrPhone(e.target.value)}
+                    placeholder="your@email.com or +541188889999"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Enter your email address or WhatsApp number
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
@@ -149,6 +190,16 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <Label htmlFor="remember-me" className="text-sm">
+                    Remember me
+                  </Label>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
@@ -163,10 +214,14 @@ const Auth = () => {
                   <Input
                     id="signup-email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={emailOrPhone}
+                    onChange={(e) => setEmailOrPhone(e.target.value)}
+                    placeholder="your@email.com"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Use a valid email address for account creation
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
@@ -178,39 +233,6 @@ const Auth = () => {
                     required
                     minLength={6}
                   />
-                </div>
-                
-                {/* Connect existing memberships section */}
-                <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="connect-existing" 
-                      checked={connectExisting}
-                      onCheckedChange={(checked) => setConnectExisting(checked as boolean)}
-                    />
-                    <Label htmlFor="connect-existing" className="text-sm font-medium">
-                      Connect existing group memberships
-                    </Label>
-                    <Smartphone className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <p className="text-xs text-blue-700">
-                    If you've already joined groups using your phone number, we can connect them to your account
-                  </p>
-                  
-                  {connectExisting && (
-                    <div className="space-y-2">
-                      <Label htmlFor="whatsapp-connect">Your WhatsApp Number</Label>
-                      <Input
-                        id="whatsapp-connect"
-                        value={whatsappNumber}
-                        onChange={(e) => setWhatsappNumber(e.target.value)}
-                        placeholder="+541188889999"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter the same number you used when joining groups
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>

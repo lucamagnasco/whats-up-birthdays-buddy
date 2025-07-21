@@ -8,6 +8,7 @@ import Groups from "./pages/Groups";
 import MyGroups from "./pages/MyGroups";
 import Profile from "./pages/Profile";
 import JoinGroup from "./pages/JoinGroup";
+import CreateGroup from "./pages/CreateGroup";
 import NotFound from "./pages/NotFound";
 import './index.css'
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/groups" element={<MyGroups />} />
           <Route path="/create" element={<Groups />} />
+          <Route path="/create-group" element={<CreateGroup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/join" element={<JoinGroup />} />
           <Route path="*" element={<NotFound />} />
