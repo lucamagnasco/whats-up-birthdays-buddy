@@ -8,7 +8,11 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType>({
+  language: 'en',
+  setLanguage: () => {},
+  t: (key: string) => key
+});
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
@@ -131,8 +135,5 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
   return context;
 };
