@@ -24,6 +24,14 @@ const CreateGroup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // When the success dialog is closed (e.g., user clicks the X), go to dashboard
+  const handleSuccessDialogChange = (open: boolean) => {
+    setShowSuccessDialog(open);
+    if (!open) {
+      navigate("/groups");
+    }
+  };
+
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
@@ -249,7 +257,7 @@ const CreateGroup = () => {
       </Card>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+      <Dialog open={showSuccessDialog} onOpenChange={handleSuccessDialogChange}>
         <DialogContent className="w-[95vw] max-w-lg mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-center">

@@ -432,8 +432,10 @@ const Groups = () => {
 
       console.log("Member added/updated successfully");
 
-      // Send WhatsApp confirmation message
-      if (memberData.whatsapp_number && memberData.whatsapp_number.trim()) {
+      // Send WhatsApp confirmation message only to regular members (not group creators)
+      const isGroupCreator = selectedGroup && currentUser && selectedGroup.created_by === currentUser.id;
+      
+      if (memberData.whatsapp_number && memberData.whatsapp_number.trim() && !isGroupCreator) {
         try {
           console.log("Sending WhatsApp confirmation to:", memberData.whatsapp_number);
           
@@ -471,6 +473,12 @@ const Groups = () => {
             description: "You joined the group successfully, but we couldn't send the WhatsApp confirmation.",
           });
         }
+      } else if (isGroupCreator) {
+        // Success message for group creators (no WhatsApp needed)
+        toast({
+          title: "Group Setup Complete! 🎉",
+          description: "Your profile has been updated. Your group is ready to use!",
+        });
       } else {
         toast({
           title: "Success! 🎉",

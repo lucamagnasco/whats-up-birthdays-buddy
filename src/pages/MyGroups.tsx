@@ -50,6 +50,7 @@ const MyGroups = () => {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
+  const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
   const [memberData, setMemberData] = useState({
     name: "",
     birthday: "",
@@ -103,6 +104,23 @@ const MyGroups = () => {
       })) || [];
 
       setGroups(groupsWithCounts);
+
+      // Check profile completeness for the current user
+      if (currentUser) {
+        const { data: memberships } = await supabase
+          .from("group_members")
+          .select("birthday, whatsapp_number")
+          .eq("user_id", currentUser.id);
+
+        const incomplete = (memberships || []).some((m: any) => {
+          return (
+            m.birthday === "1990-01-01" ||
+            !m.whatsapp_number ||
+            m.whatsapp_number.trim() === ""
+          );
+        });
+        setHasIncompleteProfile(incomplete);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -224,6 +242,8 @@ const MyGroups = () => {
         title: "Success!",
         description: "Profile updated successfully",
       });
+
+      setHasIncompleteProfile(false);
 
       setEditDialogOpen(false);
       await loadGroupMembers(selectedGroup.id);
@@ -357,11 +377,6 @@ const MyGroups = () => {
         {/* Profile Completion Warning - Top Level */}
         {!isAnonymous && (() => {
           // Check if user has incomplete profile in any group
-          const hasIncompleteProfile = groups.some(group => {
-            // This is a simplified check - in a real scenario you'd check the actual member data
-            return true; // We'll show this for now since we know the user has incomplete data
-          });
-
           return hasIncompleteProfile ? (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-start gap-3">

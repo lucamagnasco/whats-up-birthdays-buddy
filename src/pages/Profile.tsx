@@ -129,7 +129,11 @@ const Profile = () => {
         description: `Your profile has been updated across all ${profiles.length} group${profiles.length > 1 ? 's' : ''}!`,
       });
 
+      // Reload profiles to keep local state in sync
       await loadUserProfiles();
+
+      // Redirect back to groups dashboard
+      navigate("/groups");
     } catch (error: any) {
       toast({
         title: "Error",
