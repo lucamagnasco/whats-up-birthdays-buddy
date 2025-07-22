@@ -8,19 +8,9 @@ const heroImageUrl = "/lovable-uploads/d59c27c8-a272-4cbe-b320-54b7ba196619.png"
 const Hero = () => {
   const { t } = useLanguage();
 
-  const handleCreateGroup = async () => {
-    // Check if user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      // Store redirect intent and go to auth
-      sessionStorage.setItem('redirect_to', '/create');
-      sessionStorage.setItem('auth_context', 'create');
-      window.location.href = '/auth?context=create';
-    } else {
-      // User is authenticated, go directly to create group
-      window.location.href = '/create';
-    }
+  const handleCreateGroup = () => {
+    // Direct to group creation - no auth required (minimal friction!)
+    window.location.href = '/create';
   };
 
   return (

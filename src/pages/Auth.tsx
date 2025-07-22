@@ -269,6 +269,7 @@ const Auth = () => {
           <CardTitle className="text-2xl">
             {context === 'create' ? 'Create Your Account' : 
              context === 'join' ? 'Create Account (Optional)' : 
+             context === 'claim' ? 'Claim Your Group' :
              'Welcome to Birthday Buddy'}
           </CardTitle>
           <CardDescription>
@@ -276,6 +277,8 @@ const Auth = () => {
               ? 'Create your account to manage groups and access the full dashboard'
               : context === 'join'
               ? 'Link your group membership to an account for easier management'
+              : context === 'claim'
+              ? 'Create an account to manage your group and access the full dashboard'
               : 'Join groups and never miss a birthday again'
             }
           </CardDescription>

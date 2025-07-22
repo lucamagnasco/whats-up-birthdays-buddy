@@ -36,7 +36,9 @@ interface GroupMember {
 interface AnonymousGroup {
   groupId: string;
   groupName: string;
-  whatsappNumber: string;
+  whatsappNumber: string | null;
+  memberId?: string | null;
+  isCreator?: boolean;
 }
 
 const MyGroups = () => {
@@ -74,7 +76,7 @@ const MyGroups = () => {
         } else {
           // Anonymous user - load from localStorage
           setIsAnonymous(true);
-          loadAnonymousGroups();
+          await loadAnonymousGroups();
         }
       } catch (error) {
         console.error("Error initializing groups:", error);
@@ -130,9 +132,49 @@ const MyGroups = () => {
     }
   };
 
-  const loadAnonymousGroups = () => {
-    const storedGroups = JSON.parse(localStorage.getItem('anonymousGroups') || '[]');
-    setAnonymousGroups(storedGroups);
+  const loadAnonymousGroups = async () => {
+    // Load groups where user is a member
+    const storedMemberGroups = JSON.parse(localStorage.getItem('anonymousGroups') || '[]');
+    
+    // Also check for groups created by this anonymous user
+    const pendingGroupId = localStorage.getItem('pendingGroupId');
+    const pendingGroupName = localStorage.getItem('pendingGroupName');
+    
+    let allAnonymousGroups = [...storedMemberGroups];
+    
+    // If there's a pending group, add it to the list
+    if (pendingGroupId && pendingGroupName) {
+      // Check if this group is not already in the member groups
+      const existingGroup = storedMemberGroups.find(g => g.groupId === pendingGroupId);
+      if (!existingGroup) {
+        try {
+          // Verify the group still exists in the database
+          const { data: groupExists } = await supabase
+            .from("groups")
+            .select("id, name")
+            .eq("id", pendingGroupId)
+            .single();
+            
+          if (groupExists) {
+            allAnonymousGroups.push({
+              groupId: pendingGroupId,
+              groupName: pendingGroupName,
+              memberId: null, // User is creator, not member yet
+              whatsappNumber: null,
+              isCreator: true
+            });
+          } else {
+            // Clean up invalid pending group
+            localStorage.removeItem('pendingGroupId');
+            localStorage.removeItem('pendingGroupName');
+          }
+        } catch (error) {
+          console.error("Error checking pending group:", error);
+        }
+      }
+    }
+    
+    setAnonymousGroups(allAnonymousGroups);
   };
 
   const loadGroupMembers = async (groupId: string) => {
@@ -404,20 +446,52 @@ const MyGroups = () => {
         })()}
 
         {/* Remove the old header */}
-        {isAnonymous && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-700">
-              Want to create groups? 
-              <Button 
-                variant="link" 
-                className="p-0 h-auto text-blue-700 underline ml-1"
-                onClick={() => navigate('/auth')}
-              >
-                Sign up here
-              </Button>
-            </p>
-          </div>
-        )}
+        {isAnonymous && (() => {
+          // Check if user has created groups
+          const createdGroups = anonymousGroups.filter(g => g.isCreator);
+          
+          if (createdGroups.length > 0) {
+            return (
+              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 text-orange-600 mt-0.5">🎉</div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-orange-900 mb-1">You've Created Groups!</h4>
+                    <p className="text-sm text-orange-700 mb-3">
+                      Create an account to permanently manage your {createdGroups.length} group{createdGroups.length > 1 ? 's' : ''} and access all features.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        sessionStorage.setItem('redirect_to', '/groups');
+                        sessionStorage.setItem('auth_context', 'claim');
+                        navigate('/auth?context=claim');
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      Create Account & Claim Groups
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          } else {
+            return (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  Want to create groups? 
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-blue-700 underline ml-1"
+                    onClick={() => navigate('/create')}
+                  >
+                    Create one here
+                  </Button>
+                </p>
+              </div>
+            );
+          }
+        })()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Groups List - Full Width */}
@@ -434,8 +508,18 @@ const MyGroups = () => {
                   onClick={() => handleGroupClick({ id: anonymousGroup.groupId, name: anonymousGroup.groupName })}
                 >
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg">{anonymousGroup.groupName}</h3>
-                    <p className="text-sm text-muted-foreground">Click to view details</p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{anonymousGroup.groupName}</h3>
+                        <p className="text-sm text-muted-foreground">Click to view details</p>
+                      </div>
+                      {anonymousGroup.isCreator && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
+                          <Users className="w-3 h-3" />
+                          Creator
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))

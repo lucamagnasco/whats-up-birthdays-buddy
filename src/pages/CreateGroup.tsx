@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, ArrowLeft, Copy, MessageCircle, User } from "lucide-react";
+import { Users, ArrowLeft, Copy, MessageCircle, User, Mail } from "lucide-react";
 
 const CreateGroup = () => {
   const [groupData, setGroupData] = useState({
@@ -18,7 +18,7 @@ const CreateGroup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdGroup, setCreatedGroup] = useState<any>(null);
   const navigate = useNavigate();
@@ -38,19 +38,19 @@ const CreateGroup = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          // Not authenticated, redirect to auth with create context
-          sessionStorage.setItem('redirect_to', '/create');
-          sessionStorage.setItem('auth_context', 'create');
-          navigate('/auth?context=create');
-          return;
+          // Anonymous user - allow group creation
+          setIsAnonymous(true);
+          setCurrentUser(null);
+        } else {
+          // Authenticated user
+          setIsAnonymous(false);
+          setCurrentUser(user);
         }
-
-        setCurrentUser(user);
       } catch (error) {
         console.error("Auth check error:", error);
-        navigate('/auth?context=create');
-      } finally {
-        setCheckingAuth(false);
+        // On error, assume anonymous
+        setIsAnonymous(true);
+        setCurrentUser(null);
       }
     };
 
@@ -66,18 +66,8 @@ const CreateGroup = () => {
     e.preventDefault();
     
     console.log("CreateGroup: Starting form submission");
-    console.log("CreateGroup: Current user:", currentUser);
+    console.log("CreateGroup: Is anonymous:", isAnonymous);
     console.log("CreateGroup: Group data:", groupData);
-    
-    if (!currentUser) {
-      console.error("CreateGroup: No current user found");
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to create a group",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (!groupData.name.trim()) {
       toast({
@@ -98,17 +88,17 @@ const CreateGroup = () => {
         name: groupData.name,
         description: groupData.description,
         invite_code: inviteCode,
-        created_by: currentUser.id
+        created_by: isAnonymous ? null : currentUser?.id
       });
 
-      // Create the group with authenticated user
+      // Create the group (with or without owner)
       const { data: group, error } = await supabase
         .from("groups")
         .insert({
           name: groupData.name,
           description: groupData.description,
           invite_code: inviteCode,
-          created_by: currentUser.id
+          created_by: isAnonymous ? null : currentUser?.id
         })
         .select()
         .single();
@@ -121,6 +111,12 @@ const CreateGroup = () => {
       }
 
       console.log("CreateGroup: Group created successfully:", group);
+
+      // For anonymous users, store pending group in localStorage
+      if (isAnonymous) {
+        localStorage.setItem('pendingGroupId', group.id);
+        localStorage.setItem('pendingGroupName', group.name);
+      }
 
       // Store the created group for the success dialog
       setCreatedGroup(group);
@@ -141,7 +137,7 @@ const CreateGroup = () => {
   const copyInviteLink = () => {
     if (!createdGroup) return;
     
-    const inviteUrl = `https://whats-up-birthdays-buddy.lovable.app/join?invite=${createdGroup.invite_code}`;
+    const inviteUrl = `https://whats-up-birthdays-buddy.vercel.app/join?invite=${createdGroup.invite_code}`;
     navigator.clipboard.writeText(inviteUrl);
     toast({
       title: "Copied! 📋",
@@ -152,16 +148,18 @@ const CreateGroup = () => {
   const shareOnWhatsApp = () => {
     if (!createdGroup) return;
     
-    const inviteUrl = `https://whats-up-birthdays-buddy.lovable.app/join?invite=${createdGroup.invite_code}`;
+    const inviteUrl = `https://whats-up-birthdays-buddy.vercel.app/join?invite=${createdGroup.invite_code}`;
     const message = `🎉 Join my birthday group "${createdGroup.name}"!\n\nClick this link to join and never miss a birthday again:\n${inviteUrl}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleCompleteProfile = () => {
-    setShowSuccessDialog(false);
-    navigate("/profile");
+  const handleCreateAccount = () => {
+    // Store redirect and context for claiming group ownership
+    sessionStorage.setItem('redirect_to', '/groups');
+    sessionStorage.setItem('auth_context', 'claim');
+    navigate('/auth?context=claim');
   };
 
   const handleGoToDashboard = () => {
@@ -169,16 +167,7 @@ const CreateGroup = () => {
     navigate("/groups");
   };
 
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-celebration/5 to-birthday/5 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-celebration mx-auto mb-4"></div>
-          <p>Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
+  // Component always renders now - no loading state needed for auth check
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-celebration/5 to-birthday/5 flex items-center justify-center p-4">
@@ -248,10 +237,12 @@ const CreateGroup = () => {
               {loading ? "Creating Group..." : "Create Group"}
             </Button>
 
-            <div className="text-xs text-muted-foreground text-center space-y-1">
-              <p>After creating your group, you'll need to create an account</p>
-              <p>to manage it and access your dashboard.</p>
-            </div>
+            {isAnonymous && (
+              <div className="text-xs text-muted-foreground text-center space-y-1">
+                <p>You can create a group instantly!</p>
+                <p>Create an account after to manage it and access your dashboard.</p>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
@@ -277,7 +268,7 @@ const CreateGroup = () => {
                 <p className="text-sm font-medium mb-2">Invite Link:</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs bg-background p-2 rounded border break-all">
-                    https://whats-up-birthdays-buddy.lovable.app/join?invite={createdGroup?.invite_code}
+                    https://whats-up-birthdays-buddy.vercel.app/join?invite={createdGroup?.invite_code}
                   </code>
                   <Button
                     variant="outline"
@@ -308,25 +299,48 @@ const CreateGroup = () => {
               </div>
             </div>
 
-            {/* Profile Completion Reminder */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-blue-900 mb-1">Complete Your Profile</h4>
-                  <p className="text-sm text-blue-700 mb-3">
-                    Don't forget to add your birthday and contact info so others can celebrate with you!
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={handleCompleteProfile}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Complete Profile
-                  </Button>
+            {/* Account/Profile Section */}
+            {isAnonymous ? (
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Mail className="w-5 h-5 text-orange-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-orange-900 mb-1">Create Account to Manage Group</h4>
+                    <p className="text-sm text-orange-700 mb-3">
+                      Create an account to manage your group, view members, and access the full dashboard.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleCreateAccount}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Create Account
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-blue-900 mb-1">Complete Your Profile</h4>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Don't forget to add your birthday and contact info so others can celebrate with you!
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate('/profile')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Complete Profile
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
