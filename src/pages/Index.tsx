@@ -172,7 +172,7 @@ const Index = () => {
 
       {/* Member Details Dialog */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('index.joinTitle')} {selectedGroup?.name}</DialogTitle>
             <DialogDescription>

@@ -279,7 +279,7 @@ const MyGroups = () => {
                   variant="outline" 
                   size="sm" 
                   className="text-xs sm:text-sm"
-                  onClick={() => navigate('/create-group')}
+                  onClick={() => navigate('/create')}
                 >
                   <Plus className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">Create Group</span>
@@ -367,7 +367,7 @@ const MyGroups = () => {
                 <p className="text-muted-foreground">No groups yet</p>
                 <Button 
                   className="mt-2"
-                  onClick={() => navigate('/create-group')}
+                  onClick={() => navigate('/create')}
                 >
                   Create your first group
                 </Button>
@@ -526,7 +526,7 @@ const MyGroups = () => {
 
         {/* Edit Profile Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Your Profile</DialogTitle>
               <DialogDescription>

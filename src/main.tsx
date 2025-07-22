@@ -20,7 +20,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/groups" element={<MyGroups />} />
-          <Route path="/create" element={<Groups />} />
+          <Route path="/create" element={<CreateGroup />} />
           <Route path="/create-group" element={<CreateGroup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/join" element={<JoinGroup />} />

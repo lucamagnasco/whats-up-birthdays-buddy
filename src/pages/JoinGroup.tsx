@@ -300,7 +300,7 @@ const JoinGroup = () => {
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="w-[95vw] max-w-md mx-auto">
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-center">
               <MessageCircle className="w-5 h-5 text-green-600" />

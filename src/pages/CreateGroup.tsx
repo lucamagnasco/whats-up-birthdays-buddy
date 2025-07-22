@@ -31,7 +31,7 @@ const CreateGroup = () => {
         
         if (!user) {
           // Not authenticated, redirect to auth with create context
-          sessionStorage.setItem('redirect_to', '/create-group');
+          sessionStorage.setItem('redirect_to', '/create');
           sessionStorage.setItem('auth_context', 'create');
           navigate('/auth?context=create');
           return;

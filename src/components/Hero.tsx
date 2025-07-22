@@ -14,12 +14,12 @@ const Hero = () => {
     
     if (!user) {
       // Store redirect intent and go to auth
-      sessionStorage.setItem('redirect_to', '/create-group');
+      sessionStorage.setItem('redirect_to', '/create');
       sessionStorage.setItem('auth_context', 'create');
       window.location.href = '/auth?context=create';
     } else {
       // User is authenticated, go directly to create group
-      window.location.href = '/create-group';
+      window.location.href = '/create';
     }
   };
 

@@ -760,7 +760,7 @@ const Groups = () => {
 
       {/* Member Details Dialog */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
               <DialogTitle>
