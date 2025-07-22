@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Calendar, Gift, Edit, Copy, MessageCircle, Share2, LogOut, Plus } from "lucide-react";
+import { Users, Calendar, Gift, Edit, Copy, MessageCircle, Share2, LogOut, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import UserMenu from "@/components/UserMenu";
 
 interface Group {
@@ -235,6 +236,69 @@ const MyGroups = () => {
     }
   };
 
+  const deleteGroup = async (groupId: string) => {
+    try {
+      console.log("Attempting to delete group:", groupId);
+      
+      // Check current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User not authenticated");
+      }
+      
+      // Check if user owns this group
+      const { data: groupData, error: groupError } = await supabase
+        .from("groups")
+        .select("created_by, name")
+        .eq("id", groupId)
+        .single();
+        
+      if (groupError) {
+        console.error("Error fetching group:", groupError);
+        throw groupError;
+      }
+      
+      if (groupData.created_by !== user.id) {
+        throw new Error("You can only delete groups you created");
+      }
+
+      // Soft delete: set deactivated_at timestamp
+      const { error } = await supabase
+        .from("groups")
+        .update({ deactivated_at: new Date().toISOString() })
+        .eq("id", groupId);
+
+      if (error) {
+        console.error("Update error:", error);
+        throw error;
+      }
+
+      // Update local state immediately
+      setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
+
+      toast({
+        title: "Group deleted successfully",
+        description: "The group has been removed from your list.",
+      });
+
+      // Close the group details dialog if it's open
+      if (selectedGroup?.id === groupId) {
+        setGroupDetailsOpen(false);
+        setSelectedGroup(null);
+      }
+
+      // Refresh from server to ensure consistency
+      await loadAuthenticatedGroups();
+    } catch (error: any) {
+      console.error("Delete group error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete group: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getCurrentMember = () => {
     if (!selectedGroup) return null;
     
@@ -377,7 +441,13 @@ const MyGroups = () => {
                 <Card 
                   key={group.id}
                   className="cursor-pointer hover:shadow-md transition-shadow hover:shadow-lg"
-                  onClick={() => handleGroupClick(group)}
+                  onClick={(e) => {
+                    // Don't open group details if clicking on delete button
+                    if ((e.target as HTMLElement).closest('button[data-delete-button]')) {
+                      return;
+                    }
+                    handleGroupClick(group);
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -393,6 +463,38 @@ const MyGroups = () => {
                           </span>
                         </div>
                       </div>
+                      {/* Admin Delete Button */}
+                      {currentUser && group.created_by === currentUser.id && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-delete-button="true"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 -mt-1 -mr-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="w-[95vw] max-w-md mx-auto">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Group</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{group.name}"? This action cannot be undone. All members and data will be permanently removed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteGroup(group.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete Group
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -471,6 +573,39 @@ const MyGroups = () => {
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Link
                   </Button>
+                  
+                  {/* Admin Delete Button in Modal */}
+                  {!isAnonymous && currentUser && selectedGroup?.created_by === currentUser.id && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Group
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="w-[95vw] max-w-md mx-auto">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Group</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{selectedGroup?.name}"? This action cannot be undone. All members and data will be permanently removed.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => selectedGroup && deleteGroup(selectedGroup.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete Group
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </div>
 

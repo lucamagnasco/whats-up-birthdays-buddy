@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { User, Save, Users } from "lucide-react";
+import { User, Save, Users, ArrowLeft } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -154,6 +154,17 @@ const Profile = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate('/groups')}
+        className="mb-6 -ml-2"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Groups
+      </Button>
+
       <div className="flex items-center gap-3 mb-8">
         <User className="w-8 h-8" />
         <div>
