@@ -25,16 +25,16 @@ image_transformation = {enabled = true}
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
+site_url = "https://whats-up-birthdays-buddy.vercel.app"
+additional_redirect_urls = ["https://localhost:3000", "https://whats-up-birthdays-buddy.vercel.app"]
 jwt_expiry = 3600
 enable_signup = true
-enable_confirmations = false
+enable_confirmations = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 
 [functions.send-whatsapp-message]
 verify_jwt = false
