@@ -219,6 +219,47 @@ const Groups = () => {
 
       console.log("Group created successfully:", data);
 
+      // Check if the auto-add trigger worked
+      let memberData = null;
+      const { data: memberDataFromDB, error: memberError } = await supabase
+        .from('group_members')
+        .select('*')
+        .eq('group_id', data.id)
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      console.log("Member data for creator:", memberDataFromDB, "Error:", memberError);
+      
+      // If the trigger didn't work (no member found), manually add the creator
+      if (!memberDataFromDB) {
+        console.log("Auto-add trigger failed, manually adding group creator...");
+        
+        const { data: newMember, error: addMemberError } = await supabase
+          .from('group_members')
+          .insert({
+            group_id: data.id,
+            user_id: session.user.id,
+            name: 'Group Creator', // Default name, can be updated later
+            birthday: '1990-01-01',    // Default birthday, can be updated later
+            likes: '',              // Empty likes, can be updated later
+            gift_wishes: '',        // Empty gift wishes, can be updated later
+            whatsapp_number: ''     // Empty WhatsApp, can be updated later
+          })
+          .select()
+          .single();
+
+        if (addMemberError) {
+          console.error("Failed to manually add group creator:", addMemberError);
+          throw new Error("Failed to add you as group member. Please try again.");
+        }
+
+        console.log("Successfully added group creator manually:", newMember);
+        // Update memberData for the UI logic below
+        memberData = newMember;
+      } else {
+        memberData = memberDataFromDB;
+      }
+
       // Reset form and close dialog first
       setCreateDialogOpen(false);
       setNewGroupName("");
@@ -226,16 +267,6 @@ const Groups = () => {
 
       // Reload groups to show the new group
       await loadGroups();
-      
-      // Check if user needs to complete profile data
-      const { data: memberData } = await supabase
-        .from('group_members')
-        .select('*')
-        .eq('group_id', data.id)
-        .eq('user_id', session.user.id)
-        .single();
-      
-      console.log("Member data for creator:", memberData);
       
       // If the user has default/empty data, ask them to complete their profile
       if (memberData && (

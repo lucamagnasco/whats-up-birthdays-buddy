@@ -109,6 +109,46 @@ const CreateGroup = () => {
 
       console.log("CreateGroup: Group created successfully:", group);
 
+      // For authenticated users, ensure they are added as a member
+      if (!isAnonymous && currentUser) {
+        // Check if the auto-add trigger worked
+        const { data: memberData, error: memberError } = await supabase
+          .from('group_members')
+          .select('*')
+          .eq('group_id', group.id)
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+        
+        console.log("CreateGroup: Member data for creator:", memberData, "Error:", memberError);
+        
+        // If the trigger didn't work (no member found), manually add the creator
+        if (!memberData) {
+          console.log("CreateGroup: Auto-add trigger failed, manually adding group creator...");
+          
+          const { data: newMember, error: addMemberError } = await supabase
+            .from('group_members')
+            .insert({
+              group_id: group.id,
+              user_id: currentUser.id,
+              name: 'Group Creator', // Default name, can be updated later
+              birthday: '1990-01-01',    // Default birthday, can be updated later
+              likes: '',              // Empty likes, can be updated later
+              gift_wishes: '',        // Empty gift wishes, can be updated later
+              whatsapp_number: ''     // Empty WhatsApp, can be updated later
+            })
+            .select()
+            .single();
+
+          if (addMemberError) {
+            console.error("CreateGroup: Failed to manually add group creator:", addMemberError);
+            // Don't throw error here since group is already created, just log it
+            console.warn("Group created but creator couldn't be added as member");
+          } else {
+            console.log("CreateGroup: Successfully added group creator manually:", newMember);
+          }
+        }
+      }
+
       // For anonymous users, store pending group in localStorage
       if (isAnonymous) {
         localStorage.setItem('pendingGroupId', group.id);
