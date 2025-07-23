@@ -135,7 +135,7 @@ const Auth = () => {
         type: 'signup',
         email: pendingEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`
+          emailRedirectTo: 'https://whats-up-birthdays-buddy.vercel.app/auth'
         }
       });
 
@@ -180,7 +180,7 @@ const Auth = () => {
         email: emailOrPhone,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`
+          emailRedirectTo: 'https://whats-up-birthdays-buddy.vercel.app/auth'
         }
       });
 
