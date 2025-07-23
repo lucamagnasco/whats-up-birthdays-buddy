@@ -21,6 +21,8 @@ const CreateGroup = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdGroup, setCreatedGroup] = useState<any>(null);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [tempDescription, setTempDescription] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -57,17 +59,12 @@ const CreateGroup = () => {
     checkAuthentication();
   }, [navigate]);
 
-  const generateInviteCode = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setGroupData({ ...groupData, invite_code: code });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     console.log("CreateGroup: Starting form submission");
     console.log("CreateGroup: Is anonymous:", isAnonymous);
-    console.log("CreateGroup: Group data:", groupData);
+    console.log("CreateGroup: Group name:", groupData.name);
 
     if (!groupData.name.trim()) {
       toast({
@@ -81,12 +78,12 @@ const CreateGroup = () => {
     setLoading(true);
 
     try {
-      // Generate invite code if not provided
-      const inviteCode = groupData.invite_code || Math.random().toString(36).substring(2, 8).toUpperCase();
+      // Auto-generate invite code
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
       console.log("CreateGroup: About to create group with data:", {
         name: groupData.name,
-        description: groupData.description,
+        description: "", // Empty description initially
         invite_code: inviteCode,
         created_by: isAnonymous ? null : currentUser?.id
       });
@@ -96,7 +93,7 @@ const CreateGroup = () => {
         .from("groups")
         .insert({
           name: groupData.name,
-          description: groupData.description,
+          description: "", // Empty description initially
           invite_code: inviteCode,
           created_by: isAnonymous ? null : currentUser?.id
         })
@@ -167,6 +164,40 @@ const CreateGroup = () => {
     navigate("/groups");
   };
 
+  const handleUpdateDescription = async () => {
+    if (!createdGroup) return;
+    
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .update({ description: tempDescription })
+        .eq("id", createdGroup.id);
+
+      if (error) throw error;
+
+      // Update the created group state
+      setCreatedGroup({ ...createdGroup, description: tempDescription });
+      setEditingDescription(false);
+      
+      toast({
+        title: "Description updated!",
+        description: "Your group description has been saved.",
+      });
+    } catch (error: any) {
+      console.error("Error updating description:", error);
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update description.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStartEditingDescription = () => {
+    setTempDescription(createdGroup?.description || "");
+    setEditingDescription(true);
+  };
+
   // Component always renders now - no loading state needed for auth check
 
   return (
@@ -191,46 +222,17 @@ const CreateGroup = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="group-name">Group Name *</Label>
               <Input
                 id="group-name"
+                type="text"
                 value={groupData.name}
                 onChange={(e) => setGroupData({ ...groupData, name: e.target.value })}
                 placeholder="Family, Friends, Office Team..."
                 required
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="group-description">Description</Label>
-              <Textarea
-                id="group-description"
-                value={groupData.description}
-                onChange={(e) => setGroupData({ ...groupData, description: e.target.value })}
-                placeholder="Tell everyone what this group is about"
-                className="h-20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-code">Invite Code</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="invite-code"
-                  value={groupData.invite_code}
-                  onChange={(e) => setGroupData({ ...groupData, invite_code: e.target.value.toUpperCase() })}
-                  placeholder="AUTO-GENERATED"
-                  className="font-mono"
-                />
-                <Button type="button" variant="outline" onClick={generateInviteCode}>
-                  Generate
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This code will allow others to join your group
-              </p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
@@ -260,6 +262,66 @@ const CreateGroup = () => {
           </DialogHeader>
           
           <div className="space-y-6">
+            {/* Group Info Section */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-foreground">Group Details</h4>
+              
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div>
+                  <p className="text-sm font-medium mb-1">Group Name:</p>
+                  <p className="text-sm">{createdGroup?.name}</p>
+                </div>
+                
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium">Description:</p>
+                    {!editingDescription && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleStartEditingDescription}
+                        className="h-auto p-1 text-xs"
+                      >
+                        {createdGroup?.description ? "Edit" : "Add"}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {editingDescription ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={tempDescription}
+                        onChange={(e) => setTempDescription(e.target.value)}
+                        placeholder="Tell everyone what this group is about"
+                        className="h-20 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleUpdateDescription}
+                          className="text-xs"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingDescription(false)}
+                          className="text-xs"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {createdGroup?.description || "No description yet"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Invite Link Section */}
             <div className="space-y-3">
               <h4 className="font-medium text-foreground">Share Your Group</h4>

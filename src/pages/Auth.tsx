@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, ArrowLeft } from "lucide-react";
+import { Gift, ArrowLeft, Mail } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const Auth = () => {
@@ -15,6 +15,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -37,8 +38,20 @@ const Auth = () => {
           setEmailOrPhone(rememberedUser);
           setRememberMe(true);
         }
+        
+        // Check for pending email confirmation
+        const pendingEmail = localStorage.getItem('pending_email_confirmation');
+        if (pendingEmail) {
+          setEmailOrPhone(pendingEmail);
+          setPendingConfirmation(true);
+        }
+        
         return; // No valid session – stay on the auth page
       }
+
+      // User is authenticated - clear any pending confirmations
+      localStorage.removeItem('pending_email_confirmation');
+      setPendingConfirmation(false);
 
       // Check if there's a specific redirect destination
       const redirectTo = sessionStorage.getItem('redirect_to');
@@ -105,6 +118,54 @@ const Auth = () => {
 
   const isEmail = (value: string) => value.includes('@');
 
+  const handleResendConfirmation = async () => {
+    const pendingEmail = localStorage.getItem('pending_email_confirmation');
+    if (!pendingEmail) {
+      toast({
+        title: "No pending confirmation",
+        description: "No email confirmation is currently pending.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: pendingEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Confirmation email resent! 📧",
+        description: "Please check your inbox and spam folder for the new confirmation link.",
+      });
+    } catch (error: any) {
+      console.error("Resend error:", error);
+      toast({
+        title: "Resend failed",
+        description: error.message || "Failed to resend confirmation email. Please try signing up again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearPendingConfirmation = () => {
+    localStorage.removeItem('pending_email_confirmation');
+    setPendingConfirmation(false);
+    setEmailOrPhone('');
+    setPassword('');
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -131,6 +192,9 @@ const Auth = () => {
         if (error.message.includes("User already registered")) {
           throw new Error("An account with this email already exists. Please try signing in instead.");
         }
+        if (error.message.includes("Unable to send email")) {
+          throw new Error("Unable to send confirmation email. Please check your email address and try again, or contact support if the issue persists.");
+        }
         throw error;
       }
 
@@ -153,9 +217,13 @@ const Auth = () => {
       // Check if user needs email confirmation
       if (data.user && !data.session) {
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your signup.",
+          title: "Check your email! 📧",
+          description: "We've sent a confirmation link to your email. Please check your inbox and spam folder. The link will expire in 24 hours.",
         });
+        
+        // Store signup info for potential resend
+        localStorage.setItem('pending_email_confirmation', emailOrPhone);
+        setPendingConfirmation(true);
       } else if (data.session) {
         // User is immediately signed in (confirmations disabled)
         toast({
@@ -174,6 +242,7 @@ const Auth = () => {
         }
       }
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast({
         title: "Sign Up Error",
         description: error.message,
@@ -284,11 +353,55 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={flow} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+          {pendingConfirmation ? (
+            <div className="space-y-4">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-8 h-8 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-semibold">Check Your Email</h3>
+                <p className="text-sm text-muted-foreground">
+                  We sent a confirmation link to <strong>{emailOrPhone}</strong>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Please check your inbox and spam folder. The link expires in 24 hours.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleResendConfirmation} 
+                  variant="outline" 
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Resending..." : "Resend Confirmation Email"}
+                </Button>
+                <Button 
+                  onClick={handleClearPendingConfirmation} 
+                  variant="ghost" 
+                  className="w-full text-sm"
+                >
+                  Use Different Email
+                </Button>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">Not receiving emails?</h4>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Check your spam/junk folder</li>
+                  <li>• Make sure {emailOrPhone} is correct</li>
+                  <li>• Add noreply@mail.supabase.io to your contacts</li>
+                  <li>• Try a different email provider if issues persist</li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue={flow} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
             
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
@@ -366,6 +479,7 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+          )}
         </CardContent>
       </Card>
     </div>
