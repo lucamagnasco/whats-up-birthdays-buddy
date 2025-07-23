@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, ArrowLeft, Mail } from "lucide-react";
+import { Gift, ArrowLeft, Mail, Lock } from "lucide-react";
 
 const EmailCollector = () => {
   const [email, setEmail] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -25,10 +26,10 @@ const EmailCollector = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim() || !emailConfirm.trim()) {
+    if (!email.trim() || !emailConfirm.trim() || !password.trim()) {
       toast({
-        title: "Email required",
-        description: "Please enter your email address in both fields",
+        title: "All fields required",
+        description: "Please fill in your email (twice) and password",
         variant: "destructive",
       });
       return;
@@ -52,12 +53,22 @@ const EmailCollector = () => {
       return;
     }
 
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Store user email in localStorage
+      // Store user email and password in localStorage
       const userData = {
         email: email,
+        password: password, // In a real app, this should be hashed
         joinedAt: new Date().toISOString()
       };
       localStorage.setItem('userData', JSON.stringify(userData));
@@ -196,6 +207,26 @@ const EmailCollector = () => {
               </div>
               <p className="text-xs text-muted-foreground">
                 Please re-enter your email to confirm it's correct
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Choose a secure password"
+                  required
+                  className="pl-10"
+                  minLength={6}
+                />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Must be at least 6 characters long
               </p>
             </div>
 
