@@ -90,6 +90,16 @@ const MyGroups = () => {
 
   const loadAuthenticatedGroups = async () => {
     try {
+      // First get the current user to ensure we have a valid session
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error("User not authenticated:", userError);
+        return;
+      }
+
+      console.log("Loading groups for authenticated user:", user.id);
+
+      // Query groups where user is creator or member
       const { data, error } = await supabase
         .from("groups")
         .select(`
@@ -98,7 +108,12 @@ const MyGroups = () => {
         `)
         .is("deactivated_at", null);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading groups:", error);
+        throw error;
+      }
+
+      console.log("Loaded groups:", data);
 
       const groupsWithCounts = data?.map(group => ({
         ...group,

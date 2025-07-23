@@ -91,18 +91,18 @@ const CreateGroup = () => {
       console.log("CreateGroup: About to create group with data:", {
         name: groupData.name,
         description: "", // Empty description initially
-        invite_code: inviteCode
-        // Note: removed created_by to avoid RLS issues with anonymous users
+        invite_code: inviteCode,
+        created_by: currentUser.id
       });
 
-      // Create the group without created_by (let it be NULL for anonymous users)
+      // Create the group with created_by to trigger auto-add creator
       const { data: group, error } = await supabase
         .from("groups")
         .insert({
           name: groupData.name,
           description: "", // Empty description initially
-          invite_code: inviteCode
-          // No created_by field - this avoids RLS issues
+          invite_code: inviteCode,
+          created_by: currentUser.id // This triggers the database trigger to add creator as member
         })
         .select()
         .single();
@@ -116,11 +116,50 @@ const CreateGroup = () => {
 
       console.log("CreateGroup: Group created successfully:", group);
 
-      // Skip auto-add creator logic since it requires real auth.uid()
-      // For anonymous users, they can manually add themselves as members later
-      
+      // Check if creator was automatically added as member by database trigger
+      const { data: memberData, error: memberError } = await supabase
+        .from('group_members')
+        .select('*')
+        .eq('group_id', group.id)
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      console.log("CreateGroup: Creator member data:", memberData, "Error:", memberError);
+
+      // If no member data found, manually add the creator as fallback
+      let finalMemberData = memberData;
+      if (!memberData) {
+        console.log("CreateGroup: Database trigger didn't add creator, manually adding...");
+        try {
+          const { data: newMember, error: addMemberError } = await supabase
+            .from('group_members')
+            .insert({
+              group_id: group.id,
+              user_id: currentUser.id,
+              name: 'Group Creator',
+              birthday: '1990-01-01',
+              likes: '',
+              gift_wishes: '',
+              whatsapp_number: ''
+            })
+            .select()
+            .single();
+
+          if (addMemberError) {
+            console.error("CreateGroup: Failed to manually add creator:", addMemberError);
+            // Continue anyway - user can join their own group later
+          } else {
+            console.log("CreateGroup: Successfully added creator manually:", newMember);
+            finalMemberData = newMember;
+          }
+        } catch (fallbackError) {
+          console.error("CreateGroup: Fallback member creation failed:", fallbackError);
+          // Continue anyway - this is not critical for the success flow
+        }
+      }
+
       // Store the created group for the success dialog
-      setCreatedGroup(group);
+      setCreatedGroup({ ...group, memberData: finalMemberData });
       setShowSuccessDialog(true);
 
     } catch (error: any) {
@@ -358,36 +397,68 @@ const CreateGroup = () => {
               </div>
             </div>
 
-            {/* Success Actions */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-blue-900 mb-1">Complete Your Profile</h4>
-                  <p className="text-sm text-blue-700 mb-3">
-                    Don't forget to add your birthday and contact info so others can celebrate with you!
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate('/profile')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    Complete Profile
-                  </Button>
+            {/* Profile Completion Section */}
+            {createdGroup?.memberData && (
+              createdGroup.memberData.name === 'Group Creator' || 
+              createdGroup.memberData.birthday === '1990-01-01' ||
+              !createdGroup.memberData.whatsapp_number ||
+              createdGroup.memberData.whatsapp_number === ''
+            ) ? (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-yellow-900 mb-1">Complete Your Profile</h4>
+                    <p className="text-sm text-yellow-700 mb-3">
+                      Add your birthday and WhatsApp number so others can celebrate with you and you receive reminders!
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate('/profile')}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Complete Profile Now
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 text-green-600 mt-0.5">✅</div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-green-900 mb-1">Group Ready!</h4>
+                    <p className="text-sm text-green-700">
+                      Your group is set up and ready to use. Start inviting friends and family!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
               <Button
-                variant="outline"
                 onClick={handleGoToDashboard}
                 className="flex-1"
               >
-                Go to Dashboard
+                View My Groups
               </Button>
+              {createdGroup?.memberData && (
+                createdGroup.memberData.name === 'Group Creator' || 
+                createdGroup.memberData.birthday === '1990-01-01' ||
+                !createdGroup.memberData.whatsapp_number ||
+                createdGroup.memberData.whatsapp_number === ''
+              ) && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/profile')}
+                  className="flex-1"
+                >
+                  Complete Profile
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
