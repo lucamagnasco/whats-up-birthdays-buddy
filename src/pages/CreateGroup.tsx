@@ -88,18 +88,18 @@ const CreateGroup = () => {
       console.log("CreateGroup: About to create group with data:", {
         name: groupData.name,
         description: "", // Empty description initially
-        invite_code: inviteCode,
-        created_by: getUserId()
+        invite_code: inviteCode
+        // Note: removed created_by to avoid RLS issues with anonymous users
       });
 
-      // Create the group with authenticated user
+      // Create the group without created_by (let it be NULL for anonymous users)
       const { data: group, error } = await supabase
         .from("groups")
         .insert({
           name: groupData.name,
           description: "", // Empty description initially
-          invite_code: inviteCode,
-          created_by: getUserId()
+          invite_code: inviteCode
+          // No created_by field - this avoids RLS issues
         })
         .select()
         .single();
@@ -113,44 +113,9 @@ const CreateGroup = () => {
 
       console.log("CreateGroup: Group created successfully:", group);
 
-      // For authenticated users, ensure they are added as a member
-      // Check if the auto-add trigger worked
-      const { data: memberData, error: memberError } = await supabase
-        .from('group_members')
-        .select('*')
-        .eq('group_id', group.id)
-        .eq('user_id', getUserId())
-        .maybeSingle();
+      // Skip auto-add creator logic since it requires real auth.uid()
+      // For anonymous users, they can manually add themselves as members later
       
-      console.log("CreateGroup: Member data for creator:", memberData, "Error:", memberError);
-      
-      // If the trigger didn't work (no member found), manually add the creator
-      if (!memberData) {
-        console.log("CreateGroup: Auto-add trigger failed, manually adding group creator...");
-        
-        const { data: newMember, error: addMemberError } = await supabase
-          .from('group_members')
-          .insert({
-            group_id: group.id,
-            user_id: getUserId(),
-            name: 'Group Creator', // Default name, can be updated later
-            birthday: '1990-01-01',    // Default birthday, can be updated later
-            likes: '',              // Empty likes, can be updated later
-            gift_wishes: '',        // Empty gift wishes, can be updated later
-            whatsapp_number: ''     // Empty WhatsApp, can be updated later
-          })
-          .select()
-          .single();
-
-        if (addMemberError) {
-          console.error("CreateGroup: Failed to manually add group creator:", addMemberError);
-          // Don't throw error here since group is already created, just log it
-          console.warn("Group created but creator couldn't be added as member");
-        } else {
-          console.log("CreateGroup: Successfully added group creator manually:", newMember);
-        }
-      }
-
       // Store the created group for the success dialog
       setCreatedGroup(group);
       setShowSuccessDialog(true);
