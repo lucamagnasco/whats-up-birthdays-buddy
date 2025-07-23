@@ -189,7 +189,7 @@ const JoinGroup = () => {
   const handleCreateAccount = () => {
     // Store context and redirect to auth
     sessionStorage.setItem('auth_context', 'join');
-    navigate('/auth?context=join');
+    navigate('/email?context=join');
   };
 
   if (loading) {

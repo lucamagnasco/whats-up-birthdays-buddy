@@ -49,7 +49,7 @@ const CTA = () => {
                 <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group" onClick={() => {
                   sessionStorage.setItem('redirect_to', '/create');
                   sessionStorage.setItem('auth_context', 'create');
-                  window.location.href = '/auth?context=create';
+                  window.location.href = '/email?context=create';
                 }}>
                   <Users className="mr-2" />
                   {t('cta.getStarted')}

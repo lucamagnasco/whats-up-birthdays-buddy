@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
+import EmailCollector from "./components/EmailCollector";
 import Groups from "./pages/Groups";
 import MyGroups from "./pages/MyGroups";
 import Profile from "./pages/Profile";
@@ -18,7 +18,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/email" element={<EmailCollector />} />
           <Route path="/groups" element={<MyGroups />} />
           <Route path="/create" element={<CreateGroup />} />
           <Route path="/create-group" element={<CreateGroup />} />

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Users, ArrowLeft, Copy, MessageCircle, User, Mail } from "lucide-react";
+import { getCurrentUser, isAuthenticated, getUserId, UserData } from "@/lib/user";
 
 const CreateGroup = () => {
   const [groupData, setGroupData] = useState({
@@ -17,7 +18,7 @@ const CreateGroup = () => {
     invite_code: ""
   });
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdGroup, setCreatedGroup] = useState<any>(null);
@@ -35,28 +36,20 @@ const CreateGroup = () => {
   };
 
   useEffect(() => {
-    const checkAuthentication = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          // Redirect to auth if not authenticated
-          sessionStorage.setItem('redirect_to', '/create');
-          sessionStorage.setItem('auth_context', 'create');
-          navigate('/auth?context=create');
-          return;
-        }
-        
-        // User is authenticated
-        setIsAnonymous(false);
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        // On error, redirect to auth
+    const checkAuthentication = () => {
+      const user = getCurrentUser();
+      
+      if (!user) {
+        // Redirect to email collection if not authenticated
         sessionStorage.setItem('redirect_to', '/create');
         sessionStorage.setItem('auth_context', 'create');
-        navigate('/auth?context=create');
+        navigate('/email?context=create');
+        return;
       }
+      
+      // User has provided email
+      setIsAnonymous(false);
+      setCurrentUser(user);
     };
 
     checkAuthentication();
@@ -96,7 +89,7 @@ const CreateGroup = () => {
         name: groupData.name,
         description: "", // Empty description initially
         invite_code: inviteCode,
-        created_by: currentUser.id
+        created_by: getUserId()
       });
 
       // Create the group with authenticated user
@@ -106,7 +99,7 @@ const CreateGroup = () => {
           name: groupData.name,
           description: "", // Empty description initially
           invite_code: inviteCode,
-          created_by: currentUser.id
+          created_by: getUserId()
         })
         .select()
         .single();
@@ -126,7 +119,7 @@ const CreateGroup = () => {
         .from('group_members')
         .select('*')
         .eq('group_id', group.id)
-        .eq('user_id', currentUser.id)
+        .eq('user_id', getUserId())
         .maybeSingle();
       
       console.log("CreateGroup: Member data for creator:", memberData, "Error:", memberError);
@@ -139,7 +132,7 @@ const CreateGroup = () => {
           .from('group_members')
           .insert({
             group_id: group.id,
-            user_id: currentUser.id,
+            user_id: getUserId(),
             name: 'Group Creator', // Default name, can be updated later
             birthday: '1990-01-01',    // Default birthday, can be updated later
             likes: '',              // Empty likes, can be updated later
@@ -199,7 +192,7 @@ const CreateGroup = () => {
     // Store redirect and context for claiming group ownership
     sessionStorage.setItem('redirect_to', '/groups');
     sessionStorage.setItem('auth_context', 'claim');
-    navigate('/auth?context=claim');
+                          navigate('/email?context=claim');
   };
 
   const handleGoToDashboard = () => {

@@ -81,7 +81,7 @@ const HowItWorks = () => {
           <Button 
             size="lg" 
             className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group"
-            onClick={() => window.location.href = '/auth'}
+            onClick={() => window.location.href = '/email'}
           >
             <UserPlus className="mr-3 w-5 h-5" />
             {t('howItWorks.startGroup')}

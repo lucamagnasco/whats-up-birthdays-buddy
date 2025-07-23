@@ -82,9 +82,9 @@ const Groups = () => {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
         } else {
-          // No session, redirect to auth
+          // No session, redirect to email collection
           setLoading(false);
-          window.location.href = '/auth';
+          window.location.href = '/email';
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -101,7 +101,7 @@ const Groups = () => {
           await loadGroups();
         } else {
           setLoading(false);
-          window.location.href = '/auth';
+          window.location.href = '/email';
         }
       }
     );
@@ -117,8 +117,8 @@ const Groups = () => {
       // Ensure we have a valid session before making requests
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        console.log("No session found, redirecting to auth");
-        window.location.href = '/auth';
+        console.log("No session found, redirecting to email collection");
+        window.location.href = '/email';
         return;
       }
 

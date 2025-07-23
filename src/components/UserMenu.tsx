@@ -4,21 +4,21 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { User, Settings, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, clearCurrentUser, UserData } from "@/lib/user";
 
 const UserMenu = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
   }, []);
 
-  const loadUser = async () => {
+  const loadUser = () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const userData = getCurrentUser();
+      setUser(userData);
     } catch (error) {
       console.error("Error loading user:", error);
     }
@@ -28,23 +28,29 @@ const UserMenu = () => {
     navigate('/profile');
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
-      // Clean up any auth state
+      // Clear user data from localStorage
+      clearCurrentUser();
+      
+      // Clean up any remaining auth-related data
       Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-') || key.includes('userData') || key.includes('anonymousGroups')) {
           localStorage.removeItem(key);
         }
       });
 
       // Clean up session storage too
       Object.keys(sessionStorage || {}).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-') || key.includes('redirect_to') || key.includes('auth_context')) {
           sessionStorage.removeItem(key);
         }
       });
 
-      await supabase.auth.signOut({ scope: 'global' });
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
       
       // Navigate to landing page using React Router
       navigate('/');
