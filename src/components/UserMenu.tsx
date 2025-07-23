@@ -4,21 +4,39 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { User, Settings, LogOut } from "lucide-react";
-import { getCurrentUser, clearCurrentUser, UserData } from "@/lib/user";
+import { supabase } from "@/integrations/supabase/client";
+import { signOut } from "@/lib/user";
 
 const UserMenu = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
+    
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadUser = () => {
+  const loadUser = async () => {
     try {
-      const userData = getCurrentUser();
-      setUser(userData);
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error("Error loading user:", error);
+        return;
+      }
+      setUser(user);
     } catch (error) {
       console.error("Error loading user:", error);
     }
@@ -28,24 +46,10 @@ const UserMenu = () => {
     navigate('/profile');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
-      // Clear user data from localStorage
-      clearCurrentUser();
-      
-      // Clean up any remaining auth-related data
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-') || key.includes('userData') || key.includes('anonymousGroups')) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Clean up session storage too
-      Object.keys(sessionStorage || {}).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-') || key.includes('redirect_to') || key.includes('auth_context')) {
-          sessionStorage.removeItem(key);
-        }
-      });
+      // Sign out using Supabase
+      await signOut();
 
       toast({
         title: "Logged out",

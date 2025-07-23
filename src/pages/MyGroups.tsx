@@ -465,7 +465,7 @@ const MyGroups = () => {
                       onClick={() => {
                         sessionStorage.setItem('redirect_to', '/groups');
                         sessionStorage.setItem('auth_context', 'claim');
-                        navigate('/email?context=claim');
+                        navigate('/auth?context=claim');
                       }}
                       className="bg-orange-600 hover:bg-orange-700 text-white"
                     >

@@ -1,17 +1,21 @@
-export interface UserData {
-  email: string;
-  password: string;
-  joinedAt: string;
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
+
+export interface UserData extends User {
+  // Extend Supabase User type if needed
 }
 
 /**
- * Get the current user data from localStorage
+ * Get the current user data from Supabase
  */
-export const getCurrentUser = (): UserData | null => {
+export const getCurrentUser = async (): Promise<UserData | null> => {
   try {
-    const userData = localStorage.getItem('userData');
-    if (!userData) return null;
-    return JSON.parse(userData);
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+    return user as UserData;
   } catch (error) {
     console.error('Error getting user data:', error);
     return null;
@@ -19,59 +23,63 @@ export const getCurrentUser = (): UserData | null => {
 };
 
 /**
- * Set user data in localStorage
+ * Check if user is authenticated
  */
-export const setCurrentUser = (userData: UserData): void => {
+export const isAuthenticated = async (): Promise<boolean> => {
+  const user = await getCurrentUser();
+  return user !== null;
+};
+
+/**
+ * Get user ID for database operations
+ */
+export const getUserId = async (): Promise<string | null> => {
+  const user = await getCurrentUser();
+  return user?.id || null;
+};
+
+/**
+ * Sign out the current user
+ */
+export const signOut = async (): Promise<void> => {
   try {
-    localStorage.setItem('userData', JSON.stringify(userData));
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+    
+    // Clean up any remaining auth-related data from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-') || key.includes('userData') || key.includes('anonymousGroups')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Clean up session storage too
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-') || key.includes('redirect_to') || key.includes('auth_context')) {
+        sessionStorage.removeItem(key);
+      }
+    });
   } catch (error) {
-    console.error('Error setting user data:', error);
+    console.error('Error during sign out:', error);
+    throw error;
   }
 };
 
 /**
- * Remove user data from localStorage (logout)
+ * Clear current user data (legacy function for compatibility)
+ * @deprecated Use signOut() instead
  */
-export const clearCurrentUser = (): void => {
-  try {
-    localStorage.removeItem('userData');
-    localStorage.removeItem('pendingGroupEmail');
-    localStorage.removeItem('anonymousGroupsEmail');
-  } catch (error) {
-    console.error('Error clearing user data:', error);
-  }
+export const clearCurrentUser = async (): Promise<void> => {
+  await signOut();
 };
 
 /**
- * Check if user is authenticated (has provided email)
+ * Set user data (legacy function - not needed with Supabase)
+ * @deprecated Supabase handles user data automatically
  */
-export const isAuthenticated = (): boolean => {
-  return getCurrentUser() !== null;
-};
-
-/**
- * Generate a deterministic UUID based on email for database operations
- */
-export const getUserId = (): string | null => {
-  const user = getCurrentUser();
-  if (!user) return null;
-  
-  // Create a deterministic UUID v4-like string based on email
-  // This ensures the same email always generates the same ID
-  const hash = Array.from(user.email)
-    .reduce((hash, char) => Math.imul(31, hash) + char.charCodeAt(0) | 0, 0);
-  
-  // Convert to positive number and pad with zeros
-  const positiveHash = Math.abs(hash).toString().padStart(10, '0');
-  
-  // Create a UUID v4 format (8-4-4-4-12 characters)
-  const uuid = [
-    positiveHash.substring(0, 8),
-    positiveHash.substring(8, 12).padEnd(4, '0'),
-    '4' + positiveHash.substring(12, 15).padEnd(3, '0'), // Version 4
-    ('8' + positiveHash.substring(15, 18).padEnd(3, '0')).substring(0, 4), // Variant bits
-    (positiveHash + positiveHash).substring(0, 12) // Ensure 12 chars
-  ].join('-');
-  
-  return uuid;
+export const setCurrentUser = (userData: any): void => {
+  console.warn('setCurrentUser is deprecated - Supabase handles user data automatically');
 }; 

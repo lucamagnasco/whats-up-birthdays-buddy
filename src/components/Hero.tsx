@@ -12,7 +12,7 @@ const Hero = () => {
     // Redirect to auth with create context for better UX
     sessionStorage.setItem('redirect_to', '/create');
     sessionStorage.setItem('auth_context', 'create');
-          window.location.href = '/email?context=create';
+          window.location.href = '/auth?context=create';
   };
 
   return (

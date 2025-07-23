@@ -41,7 +41,7 @@ const Profile = () => {
         if (session?.user) {
           await loadUserProfiles();
         } else {
-          navigate('/email');
+          navigate('/auth');
         }
       }
     );
@@ -50,7 +50,7 @@ const Profile = () => {
       if (session?.user) {
         loadUserProfiles();
       } else {
-        navigate('/email');
+        navigate('/auth');
       }
     });
 
