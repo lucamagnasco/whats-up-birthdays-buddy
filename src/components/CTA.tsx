@@ -46,7 +46,11 @@ const CTA = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group" onClick={() => window.location.href = '/create'}>
+                <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group" onClick={() => {
+                  sessionStorage.setItem('redirect_to', '/create');
+                  sessionStorage.setItem('auth_context', 'create');
+                  window.location.href = '/auth?context=create';
+                }}>
                   <Users className="mr-2" />
                   {t('cta.getStarted')}
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />

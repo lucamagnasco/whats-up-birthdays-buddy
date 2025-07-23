@@ -40,19 +40,22 @@ const CreateGroup = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          // Anonymous user - allow group creation
-          setIsAnonymous(true);
-          setCurrentUser(null);
-        } else {
-          // Authenticated user
-          setIsAnonymous(false);
-          setCurrentUser(user);
+          // Redirect to auth if not authenticated
+          sessionStorage.setItem('redirect_to', '/create');
+          sessionStorage.setItem('auth_context', 'create');
+          navigate('/auth?context=create');
+          return;
         }
+        
+        // User is authenticated
+        setIsAnonymous(false);
+        setCurrentUser(user);
       } catch (error) {
         console.error("Auth check error:", error);
-        // On error, assume anonymous
-        setIsAnonymous(true);
-        setCurrentUser(null);
+        // On error, redirect to auth
+        sessionStorage.setItem('redirect_to', '/create');
+        sessionStorage.setItem('auth_context', 'create');
+        navigate('/auth?context=create');
       }
     };
 
@@ -63,13 +66,21 @@ const CreateGroup = () => {
     e.preventDefault();
     
     console.log("CreateGroup: Starting form submission");
-    console.log("CreateGroup: Is anonymous:", isAnonymous);
-    console.log("CreateGroup: Group name:", groupData.name);
+    console.log("CreateGroup: Current user:", currentUser);
 
     if (!groupData.name.trim()) {
       toast({
         title: "Group name required",
         description: "Please enter a name for your group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "You must be signed in to create a group",
         variant: "destructive",
       });
       return;
@@ -85,17 +96,17 @@ const CreateGroup = () => {
         name: groupData.name,
         description: "", // Empty description initially
         invite_code: inviteCode,
-        created_by: isAnonymous ? null : currentUser?.id
+        created_by: currentUser.id
       });
 
-      // Create the group (with or without owner)
+      // Create the group with authenticated user
       const { data: group, error } = await supabase
         .from("groups")
         .insert({
           name: groupData.name,
           description: "", // Empty description initially
           invite_code: inviteCode,
-          created_by: isAnonymous ? null : currentUser?.id
+          created_by: currentUser.id
         })
         .select()
         .single();
@@ -110,49 +121,41 @@ const CreateGroup = () => {
       console.log("CreateGroup: Group created successfully:", group);
 
       // For authenticated users, ensure they are added as a member
-      if (!isAnonymous && currentUser) {
-        // Check if the auto-add trigger worked
-        const { data: memberData, error: memberError } = await supabase
+      // Check if the auto-add trigger worked
+      const { data: memberData, error: memberError } = await supabase
+        .from('group_members')
+        .select('*')
+        .eq('group_id', group.id)
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+      
+      console.log("CreateGroup: Member data for creator:", memberData, "Error:", memberError);
+      
+      // If the trigger didn't work (no member found), manually add the creator
+      if (!memberData) {
+        console.log("CreateGroup: Auto-add trigger failed, manually adding group creator...");
+        
+        const { data: newMember, error: addMemberError } = await supabase
           .from('group_members')
-          .select('*')
-          .eq('group_id', group.id)
-          .eq('user_id', currentUser.id)
-          .maybeSingle();
-        
-        console.log("CreateGroup: Member data for creator:", memberData, "Error:", memberError);
-        
-        // If the trigger didn't work (no member found), manually add the creator
-        if (!memberData) {
-          console.log("CreateGroup: Auto-add trigger failed, manually adding group creator...");
-          
-          const { data: newMember, error: addMemberError } = await supabase
-            .from('group_members')
-            .insert({
-              group_id: group.id,
-              user_id: currentUser.id,
-              name: 'Group Creator', // Default name, can be updated later
-              birthday: '1990-01-01',    // Default birthday, can be updated later
-              likes: '',              // Empty likes, can be updated later
-              gift_wishes: '',        // Empty gift wishes, can be updated later
-              whatsapp_number: ''     // Empty WhatsApp, can be updated later
-            })
-            .select()
-            .single();
+          .insert({
+            group_id: group.id,
+            user_id: currentUser.id,
+            name: 'Group Creator', // Default name, can be updated later
+            birthday: '1990-01-01',    // Default birthday, can be updated later
+            likes: '',              // Empty likes, can be updated later
+            gift_wishes: '',        // Empty gift wishes, can be updated later
+            whatsapp_number: ''     // Empty WhatsApp, can be updated later
+          })
+          .select()
+          .single();
 
-          if (addMemberError) {
-            console.error("CreateGroup: Failed to manually add group creator:", addMemberError);
-            // Don't throw error here since group is already created, just log it
-            console.warn("Group created but creator couldn't be added as member");
-          } else {
-            console.log("CreateGroup: Successfully added group creator manually:", newMember);
-          }
+        if (addMemberError) {
+          console.error("CreateGroup: Failed to manually add group creator:", addMemberError);
+          // Don't throw error here since group is already created, just log it
+          console.warn("Group created but creator couldn't be added as member");
+        } else {
+          console.log("CreateGroup: Successfully added group creator manually:", newMember);
         }
-      }
-
-      // For anonymous users, store pending group in localStorage
-      if (isAnonymous) {
-        localStorage.setItem('pendingGroupId', group.id);
-        localStorage.setItem('pendingGroupName', group.name);
       }
 
       // Store the created group for the success dialog
@@ -278,13 +281,6 @@ const CreateGroup = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating Group..." : "Create Group"}
             </Button>
-
-            {isAnonymous && (
-              <div className="text-xs text-muted-foreground text-center space-y-1">
-                <p>You can create a group instantly!</p>
-                <p>Create an account after to manage it and access your dashboard.</p>
-              </div>
-            )}
           </form>
         </CardContent>
       </Card>
@@ -401,48 +397,26 @@ const CreateGroup = () => {
               </div>
             </div>
 
-            {/* Account/Profile Section */}
-            {isAnonymous ? (
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-orange-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-orange-900 mb-1">Create Account to Manage Group</h4>
-                    <p className="text-sm text-orange-700 mb-3">
-                      Create an account to manage your group, view members, and access the full dashboard.
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={handleCreateAccount}
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Create Account
-                    </Button>
-                  </div>
+            {/* Success Actions */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <User className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-900 mb-1">Complete Your Profile</h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Don't forget to add your birthday and contact info so others can celebrate with you!
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/profile')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Complete Profile
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <User className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-blue-900 mb-1">Complete Your Profile</h4>
-                    <p className="text-sm text-blue-700 mb-3">
-                      Don't forget to add your birthday and contact info so others can celebrate with you!
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => navigate('/profile')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      Complete Profile
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3">

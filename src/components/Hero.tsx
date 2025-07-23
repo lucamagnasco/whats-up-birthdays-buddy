@@ -9,8 +9,10 @@ const Hero = () => {
   const { t } = useLanguage();
 
   const handleCreateGroup = () => {
-    // Direct to group creation - no auth required (minimal friction!)
-    window.location.href = '/create';
+    // Redirect to auth with create context for better UX
+    sessionStorage.setItem('redirect_to', '/create');
+    sessionStorage.setItem('auth_context', 'create');
+    window.location.href = '/auth?context=create';
   };
 
   return (
