@@ -382,8 +382,11 @@ const Auth = () => {
                   variant="ghost" 
                   className="w-full text-sm"
                 >
-                  Use Different Email
+                  Sign In with Different Account
                 </Button>
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  Already have an account? Click "Sign In with Different Account" to access the normal sign-in form.
+                </p>
               </div>
               
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
