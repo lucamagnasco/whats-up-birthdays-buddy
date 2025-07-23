@@ -15,9 +15,6 @@ major_version = 15
 enabled = true
 port = 54323
 
-[ingest]
-enabled = false
-
 [storage]
 enabled = true
 file_size_limit = "50MiB"
@@ -29,7 +26,6 @@ site_url = "https://whats-up-birthdays-buddy.vercel.app"
 additional_redirect_urls = ["https://localhost:3000", "https://whats-up-birthdays-buddy.vercel.app"]
 jwt_expiry = 3600
 enable_signup = true
-enable_confirmations = true
 
 [auth.email]
 enable_signup = true
