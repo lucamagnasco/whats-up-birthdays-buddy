@@ -40,11 +40,8 @@ const Auth = () => {
         // Set up auth state change listener to handle confirmations
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
-            console.log("🔄 Auth state change:", event, session?.user ? "User present" : "No user");
-            
+            // Essential logging for production monitoring
             if (event === 'SIGNED_IN' && session?.user) {
-              console.log("🎉 User confirmed and signed in!");
-              
               // Clear any pending confirmations
               localStorage.removeItem('pending_email_confirmation');
               setPendingConfirmation(false);
@@ -88,7 +85,6 @@ const Auth = () => {
                 }, 1000);
               }
             } else if (event === 'SIGNED_OUT') {
-              console.log("👋 User signed out");
               // Handle sign out if needed
             }
           }
@@ -97,7 +93,6 @@ const Auth = () => {
         // Now check if we already have a valid user
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          console.log("✅ User already authenticated:", user.email);
           
           // Clear any pending confirmations since user is authenticated
           localStorage.removeItem('pending_email_confirmation');
@@ -260,11 +255,6 @@ const Auth = () => {
         throw new Error("Please use a valid email address for sign up");
       }
 
-      console.log("🔍 DIAGNOSTIC INFO:");
-      console.log("- Attempting signup for:", emailOrPhone);
-      console.log("- Supabase URL:", "https://mxprusqbnjhbqstmrgkt.supabase.co");
-      console.log("- Local config expects confirmations:", false);
-
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
         password,
@@ -297,11 +287,6 @@ const Auth = () => {
         throw error;
       }
 
-      console.log("✅ Signup response:", {
-        user: data.user ? "User created" : "No user",
-        session: data.session ? "Has session" : "No session (needs confirmation)",
-      });
-
       // If there's a pending group, associate it with the user
       const pendingGroupId = localStorage.getItem('pendingGroupId');
       if (pendingGroupId && data.user) {
@@ -320,7 +305,6 @@ const Auth = () => {
 
       // Check if user needs email confirmation
       if (data.user && !data.session) {
-        console.log("📧 Email confirmation required - storing pending state");
         toast({
           title: "Check your email! 📧",
           description: "We've sent a confirmation link to your email. Please check your inbox and spam folder. The link will expire in 24 hours.",
@@ -330,8 +314,6 @@ const Auth = () => {
         localStorage.setItem('pending_email_confirmation', emailOrPhone);
         setPendingConfirmation(true);
       } else if (data.session) {
-        console.log("🎉 User signed up successfully without confirmation");
-        // User is immediately signed in (confirmations disabled)
         toast({
           title: "Account created successfully!",
           description: "Welcome to Birthday Buddy!",
@@ -367,9 +349,6 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    console.log("Auth: Starting sign-in process");
-    console.log("Auth: Email/phone:", emailOrPhone);
-
     try {
       // For sign-in, we only support email addresses
       if (!isEmail(emailOrPhone)) {
@@ -382,8 +361,6 @@ const Auth = () => {
         password,
       });
 
-      console.log("Auth: Sign-in response:", { data, error });
-
       if (error) {
         console.error("Auth: Sign-in error:", error);
         // Provide more user-friendly error messages
@@ -392,8 +369,6 @@ const Auth = () => {
         }
         throw error;
       }
-
-      console.log("Auth: Sign-in successful, user:", data.user);
 
       // Store remember me preference
       if (rememberMe) {
@@ -406,25 +381,21 @@ const Auth = () => {
       const redirectTo = sessionStorage.getItem('redirect_to');
       const authContext = sessionStorage.getItem('auth_context');
       
-      console.log("Auth: Checking redirect - redirectTo:", redirectTo, "context:", authContext);
-
       if (redirectTo) {
-        console.log("Auth: Redirecting to:", redirectTo);
         sessionStorage.removeItem('redirect_to');
         sessionStorage.removeItem('auth_context');
         window.location.href = redirectTo;
       } else {
-        console.log("Auth: No redirect, going to /groups");
         navigate("/groups");
       }
-    } catch (error: any) {
-      console.error("Auth: Sign-in error caught:", error);
-      toast({
-        title: "Sign In Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
+          } catch (error: any) {
+        console.error("Sign-in error:", error);
+        toast({
+          title: "Sign In Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
       setLoading(false);
     }
   };
@@ -504,7 +475,7 @@ const Auth = () => {
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>• Check your spam/junk folder</li>
                   <li>• Make sure {emailOrPhone} is correct</li>
-                  <li>• Add noreply@mail.supabase.io to your contacts</li>
+                  <li>• Add your confirmation emails to your contacts</li>
                   <li>• Try a different email provider if issues persist</li>
                 </ul>
               </div>
