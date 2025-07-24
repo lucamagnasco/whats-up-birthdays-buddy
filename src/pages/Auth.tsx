@@ -134,9 +134,10 @@ const Auth = () => {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: pendingEmail,
-        options: {
-          emailRedirectTo: 'https://whats-up-birthdays-buddy.vercel.app/auth'
-        }
+        // Remove custom redirect - let Supabase use default configuration
+        // options: {
+        //   emailRedirectTo: 'https://whats-up-birthdays-buddy.vercel.app/auth'
+        // }
       });
 
       if (error) {
@@ -184,9 +185,10 @@ const Auth = () => {
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
         password,
-        options: {
-          emailRedirectTo: 'https://whats-up-birthdays-buddy.vercel.app/auth'
-        }
+        // Remove custom redirect - let Supabase use default configuration
+        // options: {
+        //   emailRedirectTo: 'https://whats-up-birthdays-buddy.vercel.app/auth'
+        // }
       });
 
       if (error) {
