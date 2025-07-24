@@ -25,68 +25,151 @@ const Auth = () => {
 
   useEffect(() => {
     /*
-      Only redirect when Supabase confirms there is a **valid** authenticated user.
-      Using `getUser()` avoids false-positive redirects caused by stale sessions that may
-      still exist in local storage but are no longer valid on the server.
+      Handle auth callback and session management.
+      This processes email confirmation tokens and manages auth state.
     */
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // Load remembered email if available
-        const rememberedUser = localStorage.getItem('rememberUser');
-        if (rememberedUser) {
-          setEmailOrPhone(rememberedUser);
-          setRememberMe(true);
-        }
+    const handleAuthCallback = async () => {
+      try {
+        // First, get the current session to handle any auth callbacks
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        // Check for pending email confirmation
-        const pendingEmail = localStorage.getItem('pending_email_confirmation');
-        if (pendingEmail) {
-          setEmailOrPhone(pendingEmail);
-          setPendingConfirmation(true);
+        if (sessionError) {
+          console.error("Session error:", sessionError);
         }
-        
-        return; // No valid session – stay on the auth page
-      }
 
-      // User is authenticated - clear any pending confirmations
-      localStorage.removeItem('pending_email_confirmation');
-      setPendingConfirmation(false);
+        // Set up auth state change listener to handle confirmations
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log("🔄 Auth state change:", event, session?.user ? "User present" : "No user");
+            
+            if (event === 'SIGNED_IN' && session?.user) {
+              console.log("🎉 User confirmed and signed in!");
+              
+              // Clear any pending confirmations
+              localStorage.removeItem('pending_email_confirmation');
+              setPendingConfirmation(false);
 
-      // Check if there's a specific redirect destination
-      const redirectTo = sessionStorage.getItem('redirect_to');
-      
-      // If there's a pending group, associate it with the user
-      const pendingGroupId = localStorage.getItem('pendingGroupId');
-      if (pendingGroupId) {
-        try {
-          await supabase
-            .from("groups")
-            .update({ created_by: user.id })
-            .eq("id", pendingGroupId);
+              // Show success message
+              toast({
+                title: "Email confirmed! 🎉",
+                description: "Welcome to Birthday Buddy!",
+              });
 
-          localStorage.removeItem('pendingGroupId');
-          localStorage.removeItem('pendingGroupName');
-        } catch (error) {
-          console.error("Error associating group:", error);
+              // Handle pending group associations
+              const pendingGroupId = localStorage.getItem('pendingGroupId');
+              if (pendingGroupId) {
+                try {
+                  await supabase
+                    .from("groups")
+                    .update({ created_by: session.user.id })
+                    .eq("id", pendingGroupId);
+
+                  localStorage.removeItem('pendingGroupId');
+                  localStorage.removeItem('pendingGroupName');
+                } catch (groupError) {
+                  console.error("Error associating group:", groupError);
+                }
+              }
+
+              // Handle anonymous member upgrade
+              await handleAnonymousUpgrade(session.user);
+
+              // Handle redirect
+              const redirectTo = sessionStorage.getItem('redirect_to');
+              if (redirectTo) {
+                sessionStorage.removeItem('redirect_to');
+                sessionStorage.removeItem('auth_context');
+                setTimeout(() => {
+                  window.location.href = redirectTo;
+                }, 1000); // Small delay to show success message
+              } else {
+                setTimeout(() => {
+                  navigate("/groups");
+                }, 1000);
+              }
+            } else if (event === 'SIGNED_OUT') {
+              console.log("👋 User signed out");
+              // Handle sign out if needed
+            }
+          }
+        );
+
+        // Now check if we already have a valid user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          console.log("✅ User already authenticated:", user.email);
+          
+          // Clear any pending confirmations since user is authenticated
+          localStorage.removeItem('pending_email_confirmation');
+          setPendingConfirmation(false);
+
+          // Check if there's a specific redirect destination
+          const redirectTo = sessionStorage.getItem('redirect_to');
+          
+          // If there's a pending group, associate it with the user
+          const pendingGroupId = localStorage.getItem('pendingGroupId');
+          if (pendingGroupId) {
+            try {
+              await supabase
+                .from("groups")
+                .update({ created_by: user.id })
+                .eq("id", pendingGroupId);
+
+              localStorage.removeItem('pendingGroupId');
+              localStorage.removeItem('pendingGroupName');
+            } catch (error) {
+              console.error("Error associating group:", error);
+            }
+          }
+
+          // Handle anonymous member upgrade
+          await handleAnonymousUpgrade(user);
+
+          // Redirect based on context
+          if (redirectTo) {
+            sessionStorage.removeItem('redirect_to');
+            sessionStorage.removeItem('auth_context');
+            window.location.href = redirectTo;
+          } else {
+            navigate("/groups");
+          }
+        } else {
+          // No authenticated user, check for pending confirmations
+          const pendingEmail = localStorage.getItem('pending_email_confirmation');
+          if (pendingEmail) {
+            setEmailOrPhone(pendingEmail);
+            setPendingConfirmation(true);
+          }
+          
+          // Load remembered email if available
+          const rememberedUser = localStorage.getItem('rememberUser');
+          if (rememberedUser && !pendingEmail) {
+            setEmailOrPhone(rememberedUser);
+            setRememberMe(true);
+          }
         }
-      }
 
-      // Handle anonymous member upgrade
-      await handleAnonymousUpgrade(user);
-
-      // Redirect based on context
-      if (redirectTo) {
-        sessionStorage.removeItem('redirect_to');
-        sessionStorage.removeItem('auth_context');
-        window.location.href = redirectTo;
-      } else {
-        navigate("/groups");
+        // Store subscription for cleanup
+        return subscription;
+      } catch (error) {
+        console.error("Auth callback error:", error);
+        return null;
       }
     };
 
-    checkUser();
-  }, [navigate]);
+    let subscription: any = null;
+    
+    handleAuthCallback().then((sub) => {
+      subscription = sub;
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [navigate, toast]);
 
   const handleAnonymousUpgrade = async (user: any) => {
     try {
