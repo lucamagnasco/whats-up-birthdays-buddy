@@ -176,6 +176,11 @@ const Auth = () => {
         throw new Error("Please use a valid email address for sign up");
       }
 
+      console.log("🔍 DIAGNOSTIC INFO:");
+      console.log("- Attempting signup for:", emailOrPhone);
+      console.log("- Supabase URL:", "https://mxprusqbnjhbqstmrgkt.supabase.co");
+      console.log("- Local config expects confirmations:", false);
+
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
         password,
@@ -185,6 +190,12 @@ const Auth = () => {
       });
 
       if (error) {
+        console.error("❌ Signup error details:", {
+          message: error.message,
+          status: error.status,
+          type: error.constructor.name,
+        });
+
         // Provide more user-friendly error messages
         if (error.message.includes("Password should be at least 6 characters")) {
           throw new Error("Password must be at least 6 characters long");
@@ -193,13 +204,18 @@ const Auth = () => {
           throw new Error("An account with this email already exists. Please try signing in instead.");
         }
         if (error.message.includes("Unable to send email")) {
-          throw new Error("Unable to send confirmation email. Please check your email address and try again, or contact support if the issue persists.");
+          throw new Error("Unable to send confirmation email. This might be due to SMTP configuration. Please contact support or try again later.");
         }
         if (error.message.includes("email rate limit exceeded")) {
-          throw new Error("Email service is temporarily unavailable due to rate limits. Please try again in a few minutes, or contact support if this issue persists.");
+          throw new Error("⚠️ DIAGNOSIS: Email rate limit reached. This suggests: 1) Email confirmations are enabled in your dashboard (but disabled locally), or 2) SMTP rate limits need to be increased. Check Authentication → Rate Limits in your Supabase dashboard.");
         }
         throw error;
       }
+
+      console.log("✅ Signup response:", {
+        user: data.user ? "User created" : "No user",
+        session: data.session ? "Has session" : "No session (needs confirmation)",
+      });
 
       // If there's a pending group, associate it with the user
       const pendingGroupId = localStorage.getItem('pendingGroupId');
@@ -219,6 +235,7 @@ const Auth = () => {
 
       // Check if user needs email confirmation
       if (data.user && !data.session) {
+        console.log("📧 Email confirmation required - storing pending state");
         toast({
           title: "Check your email! 📧",
           description: "We've sent a confirmation link to your email. Please check your inbox and spam folder. The link will expire in 24 hours.",
@@ -228,6 +245,7 @@ const Auth = () => {
         localStorage.setItem('pending_email_confirmation', emailOrPhone);
         setPendingConfirmation(true);
       } else if (data.session) {
+        console.log("🎉 User signed up successfully without confirmation");
         // User is immediately signed in (confirmations disabled)
         toast({
           title: "Account created successfully!",
