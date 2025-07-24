@@ -195,6 +195,9 @@ const Auth = () => {
         if (error.message.includes("Unable to send email")) {
           throw new Error("Unable to send confirmation email. Please check your email address and try again, or contact support if the issue persists.");
         }
+        if (error.message.includes("email rate limit exceeded")) {
+          throw new Error("Email service is temporarily unavailable due to rate limits. Please try again in a few minutes, or contact support if this issue persists.");
+        }
         throw error;
       }
 
@@ -230,6 +233,10 @@ const Auth = () => {
           title: "Account created successfully!",
           description: "Welcome to Birthday Buddy!",
         });
+        
+        // Clear any pending confirmations since user is now signed in
+        localStorage.removeItem('pending_email_confirmation');
+        setPendingConfirmation(false);
         
         // Handle redirect
         const redirectTo = sessionStorage.getItem('redirect_to');
