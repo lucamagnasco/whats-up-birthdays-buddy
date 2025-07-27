@@ -183,13 +183,17 @@ const JoinGroup = () => {
   };
 
   const handleGoToGroup = () => {
-    navigate('/groups');
+    // Store context and redirect to auth to see the group they joined
+    sessionStorage.setItem('auth_context', 'join');
+    sessionStorage.setItem('redirect_to', '/my-groups');
+    navigate('/auth?context=join');
   };
 
   const handleCreateAccount = () => {
-    // Store context and redirect to auth
-    sessionStorage.setItem('auth_context', 'join');
-            navigate('/auth?context=join');
+    // Store context and redirect to auth to create their own group
+    sessionStorage.setItem('auth_context', 'create');
+    sessionStorage.setItem('redirect_to', '/create-group');
+    navigate('/auth?context=create');
   };
 
   if (loading) {
@@ -303,16 +307,33 @@ const JoinGroup = () => {
         <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-center">
-              <MessageCircle className="w-5 h-5 text-green-600" />
-              Welcome to the group!
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <span className="block w-full">Welcome to the group!</span>
             </DialogTitle>
             <DialogDescription className="text-center space-y-4">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="font-medium text-green-800 mb-2">
-                  🎉 You've successfully joined "{group?.name}"!
+              <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                <p className="font-medium text-green-800 mb-2 flex items-center justify-center gap-2">
+                  <span className="animate-pulse">🎉</span>
+                  You've successfully joined "{group?.name}"!
+                  <span className="animate-pulse">🎉</span>
                 </p>
-                <p className="text-sm text-green-700">
-                  You should receive a WhatsApp confirmation message shortly.
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <MessageCircle className="w-5 h-5 text-blue-600 animate-bounce" />
+                  <p className="font-medium text-blue-800">
+                    WhatsApp Confirmation
+                  </p>
+                </div>
+                <p className="text-sm text-blue-700">
+                  📱 We're sending you a confirmation message on WhatsApp right now! Check your messages in a few moments.
                 </p>
               </div>
               
@@ -321,15 +342,21 @@ const JoinGroup = () => {
                   onClick={handleGoToGroup}
                   className="w-full"
                 >
-                  View Group
+                  Create User to See Group
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleCreateAccount}
                   className="w-full"
                 >
-                  Create Account to Manage Profile
+                  Create a Group
                 </Button>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  💡 To access your groups and manage your profile, you'll need to create a user account.
+                </p>
               </div>
               
               <div className="border-t pt-4">
