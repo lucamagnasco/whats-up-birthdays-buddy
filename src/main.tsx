@@ -6,6 +6,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Groups from "./pages/Groups";
 import MyGroups from "./pages/MyGroups";
+import GroupDetail from "./pages/GroupDetail";
+import GroupCalendar from "./pages/GroupCalendar";
 import Profile from "./pages/Profile";
 import JoinGroup from "./pages/JoinGroup";
 import CreateGroup from "./pages/CreateGroup";
@@ -21,6 +23,8 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/email" element={<Navigate to="/auth" replace />} />
           <Route path="/groups" element={<MyGroups />} />
+          <Route path="/groups/:id" element={<GroupDetail />} />
+          <Route path="/groups/:id/calendar" element={<GroupCalendar />} />
           <Route path="/create" element={<CreateGroup />} />
           <Route path="/create-group" element={<CreateGroup />} />
           <Route path="/profile" element={<Profile />} />

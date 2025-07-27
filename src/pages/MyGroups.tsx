@@ -211,31 +211,8 @@ const MyGroups = () => {
   };
 
   const handleGroupClick = async (group: Group | { id: string; name: string }) => {
-    if (isAnonymous) {
-      // For anonymous users, load group details first
-      try {
-        const { data: groupData, error } = await supabase
-          .from("groups")
-          .select("*")
-          .eq("id", group.id)
-          .single();
-
-        if (error) throw error;
-        setSelectedGroup(groupData);
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: "Could not load group details",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else {
-      setSelectedGroup(group as Group);
-    }
-    
-    await loadGroupMembers(group.id);
-    setGroupDetailsOpen(true);
+    // Navigate to the group detail page
+    navigate(`/groups/${group.id}`);
   };
 
   const handleEditProfile = (member: GroupMember) => {
