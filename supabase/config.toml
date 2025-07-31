@@ -22,8 +22,8 @@ image_transformation = {enabled = true}
 
 [auth]
 enabled = true
-site_url = "https://whats-up-birthdays-buddy.vercel.app"
-additional_redirect_urls = ["https://localhost:3000", "https://whats-up-birthdays-buddy.vercel.app"]
+site_url = "https://whats-up-birthdays-buddy.vercel.app/auth"
+additional_redirect_urls = ["https://localhost:3000/auth", "https://whats-up-birthdays-buddy.vercel.app/auth"]
 jwt_expiry = 3600
 enable_signup = true
 

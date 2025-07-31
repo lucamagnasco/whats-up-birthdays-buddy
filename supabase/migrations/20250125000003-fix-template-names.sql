@@ -1,4 +1,39 @@
--- Update function to send birthday reminders to all group members on the birthday day
+-- Fix template names to match actual Kapso template names
+-- Update the welcome message function to use correct template name
+
+CREATE OR REPLACE FUNCTION public.send_welcome_message_to_new_member()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only send welcome message if the new member has a WhatsApp number
+  -- and this is not the group creator (who gets added automatically)
+  IF NEW.whatsapp_number IS NOT NULL AND NEW.whatsapp_number != '' THEN
+    -- Insert welcome message into birthday_messages table
+    INSERT INTO public.birthday_messages (
+      group_id,
+      member_id,
+      recipient_number,
+      template_name,
+      language,
+      template_parameters,
+      status
+    ) VALUES (
+      NEW.group_id,
+      NEW.id,
+      NEW.whatsapp_number,
+      'welcome_birthday',  -- Updated to match actual Kapso template name
+      'es_AR',
+      jsonb_build_array(
+        NEW.name
+      ),
+      'pending'
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update the birthday alert function to use correct template name
 CREATE OR REPLACE FUNCTION public.check_upcoming_birthdays()
 RETURNS void
 LANGUAGE plpgsql
@@ -54,7 +89,7 @@ BEGIN
             AND DATE(bm.created_at AT TIME ZONE 'America/Argentina/Buenos_Aires') = check_date
           )
       LOOP
-        -- Insert birthday reminder message with correct 3 parameters:
+        -- Insert birthday reminder message with correct template name and 3 parameters:
         -- {{1}} = Recipient name (who gets the reminder)
         -- {{2}} = Birthday person's name
         -- {{3}} = Birthday person's age
@@ -70,7 +105,7 @@ BEGIN
           birthday_person.group_id,
           birthday_person.member_id,
           group_member.whatsapp_number,
-          'birthday_alert_arg',
+          'birthday_alert_arg',  -- Keep this name for database consistency, will be mapped in function
           'es_AR',
           jsonb_build_array(
             group_member.name,  -- {{1}} = Recipient name (who gets the reminder)
@@ -83,4 +118,4 @@ BEGIN
     END LOOP;
   END IF;
 END;
-$$;
+$$; 

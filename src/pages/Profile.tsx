@@ -139,7 +139,9 @@ const Profile = () => {
 
       toast({
         title: "Success! 🎉",
-        description: `Your profile has been updated and will be synced across all ${profiles.length} group${profiles.length > 1 ? 's' : ''}!`,
+        description: profiles.length > 0 
+          ? `Your profile has been updated and will be synced across all ${profiles.length} group${profiles.length > 1 ? 's' : ''}!`
+          : "Your profile has been created! Join groups to start sharing your information.",
       });
 
       // Reload profile to keep local state in sync
@@ -213,81 +215,76 @@ const Profile = () => {
         </Card>
       )}
 
-      {profiles.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-            <CardDescription>
-              This information will be used across all your groups
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={updateAllProfiles} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="birthday">Birthday</Label>
-                  <Input
-                    id="birthday"
-                    type="date"
-                    value={formData.birthday}
-                    onChange={(e) => handleInputChange('birthday', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>
+            {profiles.length > 0 
+              ? "This information will be used across all your groups"
+              : "Create your profile to get started. You can join groups later and this information will be automatically shared."
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={updateAllProfiles} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="likes">Things You Like</Label>
-                <Textarea
-                  id="likes"
-                  value={formData.likes}
-                  onChange={(e) => handleInputChange('likes', e.target.value)}
-                  placeholder="Coffee, books, sports, music, etc."
-                  className="h-20"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gift-wishes">Gift Wishes</Label>
-                <Textarea
-                  id="gift-wishes"
-                  value={formData.gift_wishes}
-                  onChange={(e) => handleInputChange('gift_wishes', e.target.value)}
-                  placeholder="Specific things you need or want as gifts..."
-                  className="h-20"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
-                  id="whatsapp"
-                  value={formData.whatsapp_number}
-                  onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
-                  placeholder="+1234567890"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={saving}>
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : `Update Profile Across All Groups`}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="text-center py-12">
-          <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No profiles yet</h3>
-          <p className="text-muted-foreground">Join a group to create your first profile</p>
-        </div>
-      )}
+              <div className="space-y-2">
+                <Label htmlFor="birthday">Birthday</Label>
+                <Input
+                  id="birthday"
+                  type="date"
+                  value={formData.birthday}
+                  onChange={(e) => handleInputChange('birthday', e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="likes">Things You Like</Label>
+              <Textarea
+                id="likes"
+                value={formData.likes}
+                onChange={(e) => handleInputChange('likes', e.target.value)}
+                placeholder="Coffee, books, sports, music, etc."
+                className="h-20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gift-wishes">Gift Wishes</Label>
+              <Textarea
+                id="gift-wishes"
+                value={formData.gift_wishes}
+                onChange={(e) => handleInputChange('gift_wishes', e.target.value)}
+                placeholder="Specific things you need or want as gifts..."
+                className="h-20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp Number</Label>
+              <Input
+                id="whatsapp"
+                value={formData.whatsapp_number}
+                onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
+                placeholder="+1234567890"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={saving}>
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : (profiles.length > 0 ? 'Update Profile Across All Groups' : 'Create Profile')}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

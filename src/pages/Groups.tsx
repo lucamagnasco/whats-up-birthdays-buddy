@@ -474,7 +474,7 @@ const Groups = () => {
             body: {
               template: {
                 phone_number: memberData.whatsapp_number,
-                template_name: 'group_confirmation',
+                template_name: 'welcome_birthday',
                 language: 'es_AR',
                 template_parameters: [memberData.name]
               },

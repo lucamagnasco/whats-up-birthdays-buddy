@@ -41,16 +41,23 @@ serve(async (req) => {
 
     if (messageId) {
       // Get pending message from database
-      const { data: message } = await supabase
+      const { data: message, error: messageError } = await supabase
         .from('birthday_messages')
         .select('*')
         .eq('id', messageId)
         .eq('status', 'pending')
         .single();
 
-      if (!message) {
-        throw new Error('Message not found or already sent');
+      if (messageError || !message) {
+        throw new Error(`Message not found or already sent: ${messageError?.message || 'No message found'}`);
       }
+
+      console.log('Processing message:', {
+        id: message.id,
+        template_name: message.template_name,
+        recipient_number: message.recipient_number,
+        parameters: message.template_parameters
+      });
 
       templateData = {
         phone_number: message.recipient_number,
@@ -62,7 +69,7 @@ serve(async (req) => {
       // Use different Kapso template IDs based on message type
       if (message.template_name === 'birthday_alert_arg') {
         templateIdToUse = 'e72d608c-efc2-4d13-8b71-6f762ff2e62f'; // Birthday reminder template
-      } else if (message.template_name === 'group_welcome_arg' || message.template_name === 'group_confirmation') {
+      } else if (message.template_name === 'welcome_birthday') {
         templateIdToUse = '578b0acd-e167-4f27-be4d-10922344dd10'; // Group confirmation template
       } else {
         throw new Error(`Unknown template name: ${message.template_name}`);
@@ -74,8 +81,17 @@ serve(async (req) => {
       throw new Error('Either messageId or both template and templateId must be provided');
     }
 
+    console.log('Sending WhatsApp message via Kapso:', {
+      templateId: templateIdToUse,
+      phoneNumber: templateData.phone_number,
+      parameters: templateData.template_parameters
+    });
+
     // Send message via Kapso API using the correct format
-    const kapsoResponse = await fetch(`https://app.kapso.ai/api/v1/whatsapp_templates/${templateIdToUse}/send_template`, {
+    const kapsoUrl = `https://app.kapso.ai/api/v1/whatsapp_templates/${templateIdToUse}/send_template`;
+    console.log('Kapso API URL:', kapsoUrl);
+
+    const kapsoResponse = await fetch(kapsoUrl, {
       method: 'POST',
       headers: {
         'X-API-Key': kapsoApiKey,
@@ -89,21 +105,29 @@ serve(async (req) => {
       }),
     });
 
+    console.log('Kapso API response status:', kapsoResponse.status);
+    console.log('Kapso API response headers:', Object.fromEntries(kapsoResponse.headers.entries()));
+
     const kapsoResult = await kapsoResponse.json();
+    console.log('Kapso API response body:', kapsoResult);
 
     if (!kapsoResponse.ok) {
-      throw new Error(`Kapso API error: ${kapsoResult.message || 'Unknown error'}`);
+      throw new Error(`Kapso API error (${kapsoResponse.status}): ${kapsoResult.message || kapsoResult.error || 'Unknown error'}`);
     }
 
     // Update message status if this was a scheduled message
     if (messageId) {
-      await supabase
+      const { error: updateError } = await supabase
         .from('birthday_messages')
         .update({
           status: 'sent',
           sent_at: new Date().toISOString()
         })
         .eq('id', messageId);
+
+      if (updateError) {
+        console.error('Error updating message status:', updateError);
+      }
     }
 
     console.log('WhatsApp message sent successfully:', kapsoResult);
@@ -121,6 +145,27 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error sending WhatsApp message:', error);
+
+    // Update message status to failed if we have a messageId
+    if (error.messageId) {
+      try {
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        await supabase
+          .from('birthday_messages')
+          .update({
+            status: 'failed',
+            error_message: error.message,
+            sent_at: new Date().toISOString()
+          })
+          .eq('id', error.messageId);
+      } catch (updateError) {
+        console.error('Error updating failed message status:', updateError);
+      }
+    }
 
     return new Response(
       JSON.stringify({
