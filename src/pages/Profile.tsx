@@ -10,20 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { User, Save, Users, ArrowLeft } from "lucide-react";
 
-interface UserProfile {
-  id: string;
-  name: string;
-  birthday: string;
-  likes: string;
-  gift_wishes?: string;
-  whatsapp_number: string;
+interface UserGroup {
   group_id: string;
   group_name: string;
 }
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [profiles, setProfiles] = useState<UserGroup[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     birthday: '',
@@ -62,39 +56,58 @@ const Profile = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      // Load user's profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw profileError;
+      }
+
+      // Load groups where user is a member
+      const { data: groupData, error: groupError } = await supabase
         .from("group_members")
         .select(`
-          *,
-          groups(name)
+          group_id,
+          groups!inner(name)
         `)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .not("groups.deactivated_at", "is", null);
 
-      if (error) throw error;
+      if (groupError) throw groupError;
 
-      const userProfiles = data?.map(member => ({
-        ...member,
+      // Remove duplicates based on group_id to ensure we only count unique groups
+      const uniqueGroups = new Map();
+      const userGroups = groupData?.map(member => ({
+        group_id: member.group_id,
         group_name: member.groups?.name || "Unknown Group"
-      })) || [];
+      })).filter(member => {
+        if (uniqueGroups.has(member.group_id)) {
+          return false; // Skip duplicate groups
+        }
+        uniqueGroups.set(member.group_id, true);
+        return true;
+      }) || [];
 
-      setProfiles(userProfiles);
+      setProfiles(userGroups);
 
-      // Use the first profile's data to populate the form
-      // (since all profiles should have the same user data)
-      if (userProfiles.length > 0) {
-        const firstProfile = userProfiles[0];
+      // Populate form with profile data
+      if (profileData) {
         setFormData({
-          name: firstProfile.name || '',
-          birthday: firstProfile.birthday || '',
-          likes: firstProfile.likes || '',
-          gift_wishes: firstProfile.gift_wishes || '',
-          whatsapp_number: firstProfile.whatsapp_number || ''
+          name: profileData.full_name || '',
+          birthday: profileData.birthday || '',
+          likes: profileData.likes || '',
+          gift_wishes: profileData.gift_wishes || '',
+          whatsapp_number: profileData.whatsapp_number || ''
         });
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to load your profiles",
+        description: "Failed to load your profile",
         variant: "destructive",
       });
     } finally {
@@ -110,26 +123,26 @@ const Profile = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Update all group memberships with the same data
+      // Update or create profile
       const { error } = await supabase
-        .from("group_members")
-        .update({
-          name: formData.name,
+        .from("profiles")
+        .upsert({
+          user_id: user.id,
+          full_name: formData.name,
           birthday: formData.birthday,
           likes: formData.likes,
           gift_wishes: formData.gift_wishes,
           whatsapp_number: formData.whatsapp_number
-        })
-        .eq("user_id", user.id);
+        });
 
       if (error) throw error;
 
       toast({
         title: "Success! 🎉",
-        description: `Your profile has been updated across all ${profiles.length} group${profiles.length > 1 ? 's' : ''}!`,
+        description: `Your profile has been updated and will be synced across all ${profiles.length} group${profiles.length > 1 ? 's' : ''}!`,
       });
 
-      // Reload profiles to keep local state in sync
+      // Reload profile to keep local state in sync
       await loadUserProfiles();
 
       // Redirect back to groups dashboard
