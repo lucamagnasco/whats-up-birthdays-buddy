@@ -12,6 +12,7 @@ import { Users, Calendar, Gift, Edit, Copy, MessageCircle, Share2, LogOut, Plus,
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import UserMenu from "@/components/UserMenu";
+import { formatBirthdayDate } from "@/lib/utils";
 
 interface Group {
   id: string;
@@ -724,7 +725,7 @@ const MyGroups = () => {
                               <div className="text-sm text-muted-foreground space-y-1">
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4" />
-                                  Birthday: {new Date(member.birthday).toLocaleDateString()}
+                                  Birthday: {formatBirthdayDate(member.birthday)}
                                 </div>
                                 {member.likes && (
                                   <div className="flex items-start gap-2">

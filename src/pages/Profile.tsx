@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { User, Save, Users, ArrowLeft } from "lucide-react";
+import { parseBirthdayDate } from "@/lib/utils";
 
 interface UserGroup {
   group_id: string;
@@ -128,11 +129,15 @@ const Profile = () => {
       let formattedBirthday = null;
       if (formData.birthday) {
         try {
-          const date = new Date(formData.birthday);
+          const date = parseBirthdayDate(formData.birthday);
           if (isNaN(date.getTime())) {
             throw new Error("Invalid birthday date format");
           }
-          formattedBirthday = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+          // Use local date formatting to avoid timezone issues
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          formattedBirthday = `${year}-${month}-${day}`; // Format as YYYY-MM-DD
         } catch (dateError) {
           throw new Error("Please enter a valid birthday date");
         }

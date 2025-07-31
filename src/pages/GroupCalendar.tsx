@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
+import { parseBirthdayDate } from "@/lib/utils";
 
 interface Group {
   id: string;
@@ -88,7 +89,8 @@ const GroupCalendar = () => {
     const currentMonth = currentDate.getMonth();
 
     const birthdays: CalendarBirthday[] = members.map(member => {
-      const memberBirthday = new Date(member.birthday);
+      // Parse birthday string manually to avoid timezone issues
+      const memberBirthday = parseBirthdayDate(member.birthday);
       
       // Create birthday for the current calendar month/year
       const birthdayThisYear = new Date(currentYear, memberBirthday.getMonth(), memberBirthday.getDate());

@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { parseBirthdayDate, formatBirthdayDate } from "@/lib/utils";
 
 interface Group {
   id: string;
@@ -108,7 +109,8 @@ const GroupDetail = () => {
     const currentYear = today.getFullYear();
     
     const birthdays = members.map(member => {
-      const memberBirthday = new Date(member.birthday);
+      // Parse birthday string manually to avoid timezone issues
+      const memberBirthday = parseBirthdayDate(member.birthday);
       
       // Create birthday for this year
       let nextBirthday = new Date(currentYear, memberBirthday.getMonth(), memberBirthday.getDate());
@@ -135,14 +137,6 @@ const GroupDetail = () => {
 
     // Show all birthdays within 35 days (no limit on count)
     setUpcomingBirthdays(birthdays);
-  };
-
-  const formatBirthdayDate = (birthday: string) => {
-    const date = new Date(birthday);
-    return date.toLocaleDateString('es-ES', { 
-      day: 'numeric', 
-      month: 'short' 
-    });
   };
 
   const copyInviteLink = () => {
@@ -285,9 +279,9 @@ const GroupDetail = () => {
                         {birthday.isToday ? "¡Hoy es su cumpleaños!" : `En ${birthday.daysUntil} días`}
                       </p>
                     </div>
-                    <Badge variant={birthday.isToday ? "default" : "secondary"}>
-                      {formatBirthdayDate(birthday.birthday)}
-                    </Badge>
+                                          <Badge variant={birthday.isToday ? "default" : "secondary"}>
+                        {formatBirthdayDate(birthday.birthday, 'es-ES', { day: 'numeric', month: 'short' })}
+                      </Badge>
                   </div>
                 ))}
               </div>
@@ -312,7 +306,7 @@ const GroupDetail = () => {
                     <p className="text-sm text-gray-600">{member.whatsapp_number}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{formatBirthdayDate(member.birthday)}</p>
+                    <p className="text-sm font-medium">{formatBirthdayDate(member.birthday, 'es-ES', { day: 'numeric', month: 'short' })}</p>
                   </div>
                 </div>
               ))}

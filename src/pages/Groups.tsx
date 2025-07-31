@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import UserMenu from "@/components/UserMenu";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatBirthdayDate } from "@/lib/utils";
 
 interface Group {
   id: string;
@@ -601,12 +602,7 @@ const Groups = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -908,7 +904,7 @@ const Groups = () => {
                         <h4 className="font-semibold">{member.name}</h4>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
-                          <span>Birthday: {formatDate(member.birthday)}</span>
+                          <span>Birthday: {formatBirthdayDate(member.birthday, 'en-US', { month: 'long', day: 'numeric' })}</span>
                         </div>
                         {member.likes && (
                           <div className="flex items-start gap-2 text-sm">
