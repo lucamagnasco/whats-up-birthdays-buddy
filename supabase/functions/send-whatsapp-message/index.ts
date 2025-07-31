@@ -87,9 +87,28 @@ serve(async (req) => {
       parameters: templateData.template_parameters
     });
 
+    // Validate phone number format
+    if (!templateData.phone_number || !templateData.phone_number.startsWith('+')) {
+      throw new Error(`Invalid phone number format: ${templateData.phone_number}. Must start with +`);
+    }
+
+    // Validate template parameters
+    if (!Array.isArray(templateData.template_parameters)) {
+      throw new Error('Template parameters must be an array');
+    }
+
     // Send message via Kapso API using the correct format
     const kapsoUrl = `https://app.kapso.ai/api/v1/whatsapp_templates/${templateIdToUse}/send_template`;
     console.log('Kapso API URL:', kapsoUrl);
+
+    const requestBody = {
+      template: {
+        phone_number: templateData.phone_number,
+        template_parameters: templateData.template_parameters
+      }
+    };
+
+    console.log('Kapso API request body:', JSON.stringify(requestBody, null, 2));
 
     const kapsoResponse = await fetch(kapsoUrl, {
       method: 'POST',
@@ -97,12 +116,7 @@ serve(async (req) => {
         'X-API-Key': kapsoApiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        template: {
-          phone_number: templateData.phone_number,
-          template_parameters: templateData.template_parameters
-        }
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log('Kapso API response status:', kapsoResponse.status);
