@@ -476,9 +476,9 @@ const Groups = () => {
                 phone_number: memberData.whatsapp_number,
                 template_name: 'group_confirmation',
                 language: 'es_AR',
-                template_parameters: [memberData.name, selectedGroup.name]
+                template_parameters: [memberData.name]
               },
-              templateId: 'ff20074d-77d5-48dc-a158-ee4babe3f8a9'
+              templateId: '578b0acd-e167-4f27-be4d-10922344dd10'
             }
           });
 

@@ -25,6 +25,15 @@ const CreateGroup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Smart back navigation - goes to dashboard if authenticated, landing page if not
+  const handleBackNavigation = () => {
+    if (currentUser && !isAnonymous) {
+      navigate("/groups");
+    } else {
+      navigate("/");
+    }
+  };
+
   // When the success dialog is closed (e.g., user clicks the X), go to dashboard
   const handleSuccessDialogChange = (open: boolean) => {
     setShowSuccessDialog(open);
@@ -250,7 +259,7 @@ const CreateGroup = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/")}
+            onClick={handleBackNavigation}
             className="absolute top-4 left-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

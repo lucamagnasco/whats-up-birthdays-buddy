@@ -4,9 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Users, Calendar, Settings, Heart } from "lucide-react";
+import { ArrowLeft, Users, Calendar, Settings, Heart, Copy, MessageCircle, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import UserMenu from "@/components/UserMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Group {
   id: string;
@@ -123,10 +129,12 @@ const GroupDetail = () => {
         daysUntil,
         isToday
       };
-    }).sort((a, b) => a.daysUntil - b.daysUntil);
+    })
+    .filter(birthday => birthday.daysUntil <= 35) // Only show birthdays within 35 days
+    .sort((a, b) => a.daysUntil - b.daysUntil);
 
-    // Only show next 3 upcoming birthdays
-    setUpcomingBirthdays(birthdays.slice(0, 3));
+    // Show all birthdays within 35 days (no limit on count)
+    setUpcomingBirthdays(birthdays);
   };
 
   const formatBirthdayDate = (birthday: string) => {
@@ -222,13 +230,27 @@ const GroupDetail = () => {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <Button
-            onClick={shareOnWhatsApp}
-            className="bg-gradient-to-r from-orange-400 to-yellow-400 hover:from-orange-500 hover:to-yellow-500 text-white py-3 h-auto"
-          >
-            <Users className="w-5 h-5 mr-2" />
-            Invitar amigos
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="bg-gradient-to-r from-orange-400 to-yellow-400 hover:from-orange-500 hover:to-yellow-500 text-white py-3 h-auto"
+              >
+                <Users className="w-5 h-5 mr-2" />
+                Invitar amigos
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={shareOnWhatsApp}>
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Compartir por WhatsApp
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyInviteLink}>
+                <Copy className="w-4 h-4 mr-2" />
+                Copiar enlace
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="outline"
             onClick={() => navigate(`/groups/${id}/calendar`)}

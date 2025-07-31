@@ -16,12 +16,23 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   
   const flow = searchParams.get('flow') || 'signin';
   const context = searchParams.get('context');
+
+  // Smart back navigation - goes to dashboard if authenticated, landing page if not
+  const handleBackNavigation = () => {
+    if (currentUser && !isAnonymous) {
+      navigate("/groups");
+    } else {
+      navigate("/");
+    }
+  };
 
   useEffect(() => {
     /*
@@ -93,6 +104,9 @@ const Auth = () => {
         // Now check if we already have a valid user
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Update user state
+          setCurrentUser(user);
+          setIsAnonymous(false);
           
           // Clear any pending confirmations since user is authenticated
           localStorage.removeItem('pending_email_confirmation');
@@ -129,7 +143,11 @@ const Auth = () => {
             navigate("/groups");
           }
         } else {
-          // No authenticated user, check for pending confirmations
+          // No authenticated user
+          setCurrentUser(null);
+          setIsAnonymous(true);
+          
+          // Check for pending confirmations
           const pendingEmail = localStorage.getItem('pending_email_confirmation');
           if (pendingEmail) {
             setEmailOrPhone(pendingEmail);
@@ -407,7 +425,7 @@ const Auth = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/")}
+            onClick={handleBackNavigation}
             className="absolute top-4 left-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

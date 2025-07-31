@@ -21,8 +21,7 @@ BEGIN
       'group_welcome_arg',
       'es_AR',
       jsonb_build_array(
-        NEW.name,
-        (SELECT name FROM public.groups WHERE id = NEW.group_id)
+        NEW.name
       ),
       'pending'
     );

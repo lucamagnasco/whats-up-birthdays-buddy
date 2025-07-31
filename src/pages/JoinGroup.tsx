@@ -137,9 +137,9 @@ const JoinGroup = () => {
               phone_number: memberData.whatsapp_number,
               template_name: 'group_confirmation',
               language: 'es_AR',
-              template_parameters: [memberData.name, group.name]
+              template_parameters: [memberData.name]
             },
-            templateId: '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c'
+            templateId: '578b0acd-e167-4f27-be4d-10922344dd10'
           }
         });
 
@@ -306,16 +306,6 @@ const JoinGroup = () => {
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto mx-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </div>
-              <span className="block w-full">Welcome to the group!</span>
-            </DialogTitle>
             <DialogDescription className="text-center space-y-4">
               <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
                 <p className="font-medium text-green-800 mb-2 flex items-center justify-center gap-2">
@@ -342,21 +332,8 @@ const JoinGroup = () => {
                   onClick={handleGoToGroup}
                   className="w-full"
                 >
-                  Create User to See Group
+                  Create User to View/Create Groups
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleCreateAccount}
-                  className="w-full"
-                >
-                  Create a Group
-                </Button>
-              </div>
-              
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  💡 To access your groups and manage your profile, you'll need to create a user account.
-                </p>
               </div>
               
               <div className="border-t pt-4">

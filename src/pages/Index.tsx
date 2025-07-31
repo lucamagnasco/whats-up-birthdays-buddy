@@ -91,9 +91,9 @@ const Index = () => {
               phone_number: memberData.whatsapp_number,
               template_name: 'group_confirmation',
               language: 'es_AR',
-              template_parameters: [memberData.name, selectedGroup.name]
+              template_parameters: [memberData.name]
             },
-            templateId: '65838f7e-0da3-42fd-bfa7-4d05c1c3df2c'
+            templateId: '578b0acd-e167-4f27-be4d-10922344dd10'
           }
         });
 
