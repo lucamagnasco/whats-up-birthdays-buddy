@@ -192,25 +192,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthday: string | null
           created_at: string
           full_name: string | null
+          gift_wishes: string | null
           id: string
+          likes: string | null
           updated_at: string
           user_id: string
           whatsapp_number: string | null
         }
         Insert: {
+          birthday?: string | null
           created_at?: string
           full_name?: string | null
+          gift_wishes?: string | null
           id?: string
+          likes?: string | null
           updated_at?: string
           user_id: string
           whatsapp_number?: string | null
         }
         Update: {
+          birthday?: string | null
           created_at?: string
           full_name?: string | null
+          gift_wishes?: string | null
           id?: string
+          likes?: string | null
           updated_at?: string
           user_id?: string
           whatsapp_number?: string | null

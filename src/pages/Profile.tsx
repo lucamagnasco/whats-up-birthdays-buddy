@@ -13,6 +13,7 @@ import { User, Save, Users, ArrowLeft } from "lucide-react";
 interface UserGroup {
   group_id: string;
   group_name: string;
+  id?: string;
 }
 
 const Profile = () => {
@@ -123,16 +124,38 @@ const Profile = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Format birthday date if provided
+      let formattedBirthday = null;
+      if (formData.birthday) {
+        try {
+          const date = new Date(formData.birthday);
+          if (isNaN(date.getTime())) {
+            throw new Error("Invalid birthday date format");
+          }
+          formattedBirthday = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        } catch (dateError) {
+          throw new Error("Please enter a valid birthday date");
+        }
+      }
+
+      // Validate WhatsApp number format
+      let formattedWhatsAppNumber = formData.whatsapp_number;
+      if (formattedWhatsAppNumber && !formattedWhatsAppNumber.startsWith('+')) {
+        formattedWhatsAppNumber = '+' + formattedWhatsAppNumber;
+      }
+
       // Update or create profile
       const { error } = await supabase
         .from("profiles")
         .upsert({
           user_id: user.id,
           full_name: formData.name,
-          birthday: formData.birthday,
+          birthday: formattedBirthday,
           likes: formData.likes,
           gift_wishes: formData.gift_wishes,
-          whatsapp_number: formData.whatsapp_number
+          whatsapp_number: formattedWhatsAppNumber
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
@@ -150,9 +173,10 @@ const Profile = () => {
       // Redirect back to groups dashboard
       navigate("/groups");
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
