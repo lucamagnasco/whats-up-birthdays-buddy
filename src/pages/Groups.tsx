@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -862,11 +863,11 @@ const Groups = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="member-whatsapp">WhatsApp Number *</Label>
-              <Input
+              <PhoneInput
                 id="member-whatsapp"
                 value={memberData.whatsapp_number}
-                onChange={(e) => setMemberData({...memberData, whatsapp_number: e.target.value})}
-                placeholder="+541188889999"
+                onChange={(value) => setMemberData({...memberData, whatsapp_number: value})}
+                placeholder="Phone number"
                 required
               />
               <div className="text-xs text-muted-foreground space-y-1">

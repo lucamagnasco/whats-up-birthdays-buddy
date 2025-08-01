@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -299,11 +300,11 @@ const Profile = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="whatsapp">WhatsApp Number</Label>
-              <Input
+              <PhoneInput
                 id="whatsapp"
                 value={formData.whatsapp_number}
-                onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
-                placeholder="+1234567890"
+                onChange={(value) => handleInputChange('whatsapp_number', value)}
+                placeholder="Phone number"
                 required
               />
             </div>

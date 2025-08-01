@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -228,10 +229,10 @@ const Index = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="member-whatsapp">{t('index.whatsappNumber')} *</Label>
-              <Input
+              <PhoneInput
                 id="member-whatsapp"
                 value={memberData.whatsapp_number}
-                onChange={(e) => setMemberData({...memberData, whatsapp_number: e.target.value})}
+                onChange={(value) => setMemberData({...memberData, whatsapp_number: value})}
                 placeholder={t('index.whatsappPlaceholder')}
                 required
               />

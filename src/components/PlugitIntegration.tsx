@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Check, AlertCircle, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -157,12 +158,11 @@ const KapsoIntegration = () => {
 
         <div className="space-y-2">
           <Label htmlFor="phoneNumber">WhatsApp Business Phone Number</Label>
-          <Input
+          <PhoneInput
             id="phoneNumber"
-            type="tel"
-            placeholder="+1234567890"
+            placeholder="Phone number"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            onChange={(value) => setPhoneNumber(value)}
           />
         </div>
 
