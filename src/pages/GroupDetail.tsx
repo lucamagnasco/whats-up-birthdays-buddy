@@ -133,10 +133,20 @@ const GroupDetail = () => {
       };
     })
     .filter(birthday => birthday.daysUntil <= 35) // Only show birthdays within 35 days
-    .sort((a, b) => a.daysUntil - b.daysUntil);
+    .sort((a, b) => {
+      // Sort by priority: today's birthdays first, then by days until
+      if (a.isToday && !b.isToday) return -1;
+      if (!a.isToday && b.isToday) return 1;
+      return a.daysUntil - b.daysUntil;
+    });
 
     // Show all birthdays within 35 days (no limit on count)
     setUpcomingBirthdays(birthdays);
+    
+    // Debug: Log today's date and birthday calculations
+    console.log('Today:', today.toISOString().split('T')[0]);
+    console.log('Upcoming birthdays:', birthdays);
+    console.log('Luca Mag birthday check:', birthdays.find(b => b.name === 'Luca Mag'));
   };
 
   const copyInviteLink = () => {
@@ -255,7 +265,52 @@ const GroupDetail = () => {
           </Button>
         </div>
 
-        {/* Next Birthdays */}
+        {/* Today's Birthday - Special Section */}
+        {upcomingBirthdays.some(b => b.isToday) && (
+          <Card className="mb-6 border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-orange-50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-6 h-6 bg-yellow-400 rounded-full">
+                  <span className="text-white text-sm">🎂</span>
+                </div>
+                <CardTitle className="text-lg text-orange-800">¡Cumpleaños de Hoy!</CardTitle>
+              </div>
+              <p className="text-sm text-orange-600">¡No te olvides de felicitar!</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {upcomingBirthdays.filter(b => b.isToday).map((birthday) => (
+                  <div 
+                    key={birthday.id} 
+                    className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 rounded-lg shadow-md"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 bg-yellow-400 rounded-full">
+                        <span className="text-white text-xl">🎉</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg text-orange-800">
+                          {birthday.name}
+                        </p>
+                        <p className="text-sm text-orange-600 font-medium">
+                          ¡Hoy es su cumpleaños! 🎂
+                        </p>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant="default"
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1"
+                    >
+                      {formatBirthdayDate(birthday.birthday, 'es-ES', { day: 'numeric', month: 'short' })}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Next Birthdays - Regular Section */}
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -265,23 +320,26 @@ const GroupDetail = () => {
             <p className="text-sm text-gray-600">Los siguientes cumpleaños en tu grupo</p>
           </CardHeader>
           <CardContent>
-            {upcomingBirthdays.length === 0 ? (
+            {upcomingBirthdays.filter(b => !b.isToday).length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No hay cumpleaños próximos
+                No hay más cumpleaños próximos
               </div>
             ) : (
               <div className="space-y-3">
-                {upcomingBirthdays.map((birthday) => (
-                  <div key={birthday.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                {upcomingBirthdays.filter(b => !b.isToday).map((birthday) => (
+                  <div 
+                    key={birthday.id} 
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div>
                       <p className="font-medium">{birthday.name}</p>
                       <p className="text-sm text-gray-600">
-                        {birthday.isToday ? "¡Hoy es su cumpleaños!" : `En ${birthday.daysUntil} días`}
+                        En {birthday.daysUntil} días
                       </p>
                     </div>
-                                          <Badge variant={birthday.isToday ? "default" : "secondary"}>
-                        {formatBirthdayDate(birthday.birthday, 'es-ES', { day: 'numeric', month: 'short' })}
-                      </Badge>
+                    <Badge variant="secondary">
+                      {formatBirthdayDate(birthday.birthday, 'es-ES', { day: 'numeric', month: 'short' })}
+                    </Badge>
                   </div>
                 ))}
               </div>
