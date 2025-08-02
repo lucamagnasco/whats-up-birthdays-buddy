@@ -108,9 +108,13 @@ const GroupDetail = () => {
     const today = new Date();
     const currentYear = today.getFullYear();
     
+    console.log('Calculating birthdays for date:', today.toISOString().split('T')[0]);
+    
     const birthdays = members.map(member => {
       // Parse birthday string manually to avoid timezone issues
       const memberBirthday = parseBirthdayDate(member.birthday);
+      
+      console.log(`Processing ${member.name}: birthday ${member.birthday}, parsed as ${memberBirthday.toISOString().split('T')[0]}`);
       
       // Create birthday for this year
       let nextBirthday = new Date(currentYear, memberBirthday.getMonth(), memberBirthday.getDate());
@@ -123,6 +127,8 @@ const GroupDetail = () => {
       const timeDiff = nextBirthday.getTime() - today.getTime();
       const daysUntil = Math.ceil(timeDiff / (1000 * 3600 * 24));
       const isToday = daysUntil === 0;
+      
+      console.log(`${member.name}: nextBirthday=${nextBirthday.toISOString().split('T')[0]}, daysUntil=${daysUntil}, isToday=${isToday}`);
       
       return {
         id: member.id,
@@ -147,6 +153,7 @@ const GroupDetail = () => {
     console.log('Today:', today.toISOString().split('T')[0]);
     console.log('Upcoming birthdays:', birthdays);
     console.log('Luca Mag birthday check:', birthdays.find(b => b.name === 'Luca Mag'));
+    console.log('Today birthdays:', birthdays.filter(b => b.isToday));
   };
 
   const copyInviteLink = () => {
