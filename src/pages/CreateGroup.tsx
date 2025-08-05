@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +15,6 @@ import { ErrorHandler } from "@/lib/errorHandler";
 
 interface FormErrors {
   name?: string;
-  description?: string;
 }
 
 const CreateGroup = () => {
@@ -30,8 +28,6 @@ const CreateGroup = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdGroup, setCreatedGroup] = useState<any>(null);
-  const [editingDescription, setEditingDescription] = useState(false);
-  const [tempDescription, setTempDescription] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [fieldStatus, setFieldStatus] = useState<Record<string, 'idle' | 'validating' | 'valid' | 'invalid'>>({});
   const navigate = useNavigate();
@@ -71,14 +67,6 @@ const CreateGroup = () => {
           setFieldStatus(prev => ({ ...prev, name: 'invalid' }));
         } else {
           setFieldStatus(prev => ({ ...prev, name: 'valid' }));
-        }
-        break;
-      case 'description':
-        if (value.length > 500) {
-          errors.description = 'Description must be less than 500 characters';
-          setFieldStatus(prev => ({ ...prev, description: 'invalid' }));
-        } else {
-          setFieldStatus(prev => ({ ...prev, description: 'valid' }));
         }
         break;
     }
@@ -295,40 +283,6 @@ const CreateGroup = () => {
     navigate("/groups");
   };
 
-  const handleUpdateDescription = async () => {
-    if (!createdGroup) return;
-    
-    try {
-      const { error } = await supabase
-        .from("groups")
-        .update({ description: tempDescription })
-        .eq("id", createdGroup.id);
-
-      if (error) throw error;
-
-      // Update the created group state
-      setCreatedGroup({ ...createdGroup, description: tempDescription });
-      setEditingDescription(false);
-      
-      toast({
-        title: "Description updated!",
-        description: "Your group description has been saved.",
-      });
-    } catch (error: any) {
-      console.error("Error updating description:", error);
-      toast({
-        title: "Update failed",
-        description: error.message || "Failed to update description.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStartEditingDescription = () => {
-    setTempDescription(createdGroup?.description || "");
-    setEditingDescription(true);
-  };
-
   // Component always renders now - no loading state needed for auth check
 
   return (
@@ -408,89 +362,10 @@ const CreateGroup = () => {
           </DialogHeader>
           
           <div className="space-y-6">
-            {/* Group Info Section */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground">Group Details</h4>
-              
-              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-                <div>
-                  <p className="text-sm font-medium mb-1">Group Name:</p>
-                  <p className="text-sm">{createdGroup?.name}</p>
-                </div>
-                
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium">Description:</p>
-                    {!editingDescription && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleStartEditingDescription}
-                        className="h-auto p-1 text-xs"
-                      >
-                        {createdGroup?.description ? "Edit" : "Add"}
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {editingDescription ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={tempDescription}
-                        onChange={(e) => handleFieldChange('description', e.target.value)}
-                        placeholder="Tell everyone what this group is about"
-                        className={`h-20 text-sm ${fieldStatus.description === 'invalid' ? 'border-red-500' : ''}`}
-                      />
-                      {fieldStatus.description === 'invalid' && (
-                        <p className="text-xs text-red-500 mt-1">{formErrors.description}</p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleUpdateDescription}
-                          className="text-xs"
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingDescription(false)}
-                          className="text-xs"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {createdGroup?.description || "No description yet"}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
             {/* Invite Link Section */}
             <div className="space-y-3">
               <h4 className="font-medium text-foreground">Share Your Group</h4>
               
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium mb-2">Invite Link:</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-background p-2 rounded border break-all">
-                    https://no-cuelgues.vercel.app/join?invite={createdGroup?.invite_code}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyInviteLink}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
               <div className="flex gap-3">
                 <Button
                   onClick={shareOnWhatsApp}
@@ -505,7 +380,7 @@ const CreateGroup = () => {
                   className="flex-1"
                 >
                   <Copy className="w-4 h-4 mr-2" />
-                  Copy Link
+                  Copy Invite Link
                 </Button>
               </div>
             </div>
@@ -517,18 +392,18 @@ const CreateGroup = () => {
               !createdGroup.memberData.whatsapp_number ||
               createdGroup.memberData.whatsapp_number === ''
             ) ? (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start gap-3">
-                  <User className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <User className="w-5 h-5 text-red-600 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="font-medium text-yellow-900 mb-1">Complete Your Profile</h4>
-                    <p className="text-sm text-yellow-700 mb-3">
+                    <h4 className="font-medium text-red-900 mb-1">Complete Your Profile</h4>
+                    <p className="text-sm text-red-700 mb-3">
                       Add your birthday and WhatsApp number so others can celebrate with you and you receive reminders!
                     </p>
                     <Button
                       size="sm"
                       onClick={() => navigate('/profile')}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       <User className="w-4 h-4 mr-2" />
                       Complete Profile Now

@@ -232,7 +232,7 @@ const GroupDetail = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/groups/${id}/settings`)}
+              onClick={() => navigate('/profile')}
               className="text-gray-500 hover:text-gray-700"
             >
               <Settings className="w-5 h-5" />

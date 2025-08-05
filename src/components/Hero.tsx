@@ -37,7 +37,11 @@ const Hero = () => {
               </h1>
               
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                {t('hero.description')}
+                <span className="underline decoration-orange-400 decoration-2">
+                  Dejaste de usar facebook
+                </span>
+                {' '}y te olvidas de los cumpleaños??<br />
+                Crea grupos con amigos y recibí recordatorios de whatsapp con gustos y lista de deseos personalizados.
               </p>
             </div>
 
@@ -66,14 +70,18 @@ const Hero = () => {
               </Button>
             </div>
 
-            {/* Free message with Kiwell reference */}
-            <div className="mt-6 p-4 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-lg">
+            {/* Free message - moved outside Kiwell box for visual separation */}
+            <div className="mt-6">
+              <p className="text-sm text-green-800 text-center font-medium">
+                🎉 ¡Completamente gratis!
+              </p>
+            </div>
+
+            {/* Kiwell reference - separated from free message */}
+            <div className="mt-4 p-4 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-lg">
               <div className="flex flex-col items-center space-y-3">
-                <p className="text-sm text-green-800 text-center font-medium">
-                  🎉 ¡Completamente gratis!
-                </p>
                 <p className="text-sm text-green-700 text-center">
-                  Chequea nuestro proyecto de wellness
+                  Soy Luca, como me olvide el cumpleaños de mi mejor amigo, arme esta app gratuita. Me podes dar una mano chequeando mi otro proyecto de wellness:
                 </p>
                 <a 
                   href="https://kiwell.ar/" 
