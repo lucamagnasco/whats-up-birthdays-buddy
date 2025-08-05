@@ -467,6 +467,7 @@ const EnhancedAuth = () => {
           status: error.status,
           type: error.constructor.name,
           code: error.code,
+          name: error.name,
         });
 
         // Enhanced check for existing user - check multiple possible error patterns
@@ -476,14 +477,21 @@ const EnhancedAuth = () => {
           error.message?.toLowerCase().includes('email already in use') ||
           error.message?.toLowerCase().includes('already exists') ||
           error.message?.toLowerCase().includes('already registered') ||
+          error.message?.toLowerCase().includes('user already exists') ||
+          error.message?.toLowerCase().includes('email already registered') ||
           error.code === 'auth/email-already-in-use' ||
           error.code === 'auth/user-already-registered' ||
-          error.status === 422; // Common status for existing user errors
+          error.code === 'auth/user-already-exists' ||
+          error.status === 422 || // Common status for existing user errors
+          error.status === 400; // Another common status for validation errors
 
         if (isExistingUser) {
+          console.log("✅ Detected existing user, calling handleUserExists");
           handleUserExists();
           return;
         }
+
+        console.log("❌ Error not recognized as existing user, throwing error");
         throw error;
       }
 
