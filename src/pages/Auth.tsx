@@ -273,13 +273,10 @@ const Auth = () => {
         throw new Error("Please use a valid email address for sign up");
       }
 
+      // Try to sign up the user
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
         password,
-        // Remove custom redirect - let Supabase use default configuration
-        // options: {
-        //   emailRedirectTo: 'https://no-cuelgues.vercel.app/auth'
-        // }
       });
 
       if (error) {
@@ -293,8 +290,14 @@ const Auth = () => {
         if (error.message.includes("Password should be at least 6 characters")) {
           throw new Error("Password must be at least 6 characters long");
         }
-        if (error.message.includes("User already registered")) {
-          throw new Error("An account with this email already exists. Please try signing in instead.");
+        if (error.message.includes("User already registered") || error.message.includes("already been registered")) {
+          // User already exists - suggest they sign in instead
+          toast({
+            title: "Account already exists",
+            description: "An account with this email already exists. Please try signing in instead.",
+            variant: "destructive",
+          });
+          return;
         }
         if (error.message.includes("Unable to send email")) {
           throw new Error("Unable to send confirmation email. This might be due to SMTP configuration. Please contact support or try again later.");

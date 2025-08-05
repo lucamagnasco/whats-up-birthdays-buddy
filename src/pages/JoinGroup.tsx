@@ -26,14 +26,43 @@ const JoinGroup = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const { toast } = useToast();
   
-  // Member data form
-  const [memberData, setMemberData] = useState({
-    name: "",
-    birthday: "",
-    likes: "",
-    gift_wishes: "",
-    whatsapp_number: ""
+  // Member data form with persistence
+  const [memberData, setMemberData] = useState(() => {
+    // Try to restore data from localStorage
+    if (inviteCode) {
+      const savedData = localStorage.getItem(`joinGroup_${inviteCode}`);
+      if (savedData) {
+        try {
+          return JSON.parse(savedData);
+        } catch (e) {
+          console.error('Error parsing saved data:', e);
+        }
+      }
+    }
+    return {
+      name: "",
+      birthday: "",
+      likes: "",
+      gift_wishes: "",
+      whatsapp_number: ""
+    };
   });
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (inviteCode && memberData.name) {
+      localStorage.setItem(`joinGroup_${inviteCode}`, JSON.stringify(memberData));
+    }
+  }, [memberData, inviteCode]);
+
+  // Clear saved data when component unmounts or on successful join
+  useEffect(() => {
+    return () => {
+      if (inviteCode) {
+        localStorage.removeItem(`joinGroup_${inviteCode}`);
+      }
+    };
+  }, [inviteCode]);
 
 
   useEffect(() => {
@@ -103,12 +132,31 @@ const JoinGroup = () => {
         return;
       }
 
+      // Also check if the current authenticated user is already a member
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: existingUserMember } = await supabase
+          .from("group_members")
+          .select("*")
+          .eq("group_id", group.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (existingUserMember) {
+          toast({
+            title: "Already a member",
+            description: "You are already a member of this group",
+          });
+          return;
+        }
+      }
+
       // Add member to group without user_id (anonymous)
       const { data: newMember, error } = await supabase
         .from("group_members")
         .insert({
           group_id: group.id,
-          user_id: null, // Anonymous user
+          user_id: user?.id || null, // Use authenticated user ID if available
           name: memberData.name,
           birthday: memberData.birthday,
           likes: memberData.likes,
@@ -129,6 +177,11 @@ const JoinGroup = () => {
         whatsappNumber: memberData.whatsapp_number
       });
       localStorage.setItem('anonymousGroups', JSON.stringify(anonymousGroups));
+
+      // Clear saved form data since join was successful
+      if (inviteCode) {
+        localStorage.removeItem(`joinGroup_${inviteCode}`);
+      }
 
       // Send WhatsApp confirmation message
       try {

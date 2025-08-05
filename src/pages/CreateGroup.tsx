@@ -297,7 +297,7 @@ const CreateGroup = () => {
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={handleSuccessDialogChange}>
-        <DialogContent className="w-[95vw] max-w-lg mx-auto">
+        <DialogContent className="w-[95vw] max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-center">
               🎉 Group Created Successfully!
