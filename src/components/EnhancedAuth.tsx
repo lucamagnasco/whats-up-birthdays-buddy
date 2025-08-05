@@ -85,7 +85,16 @@ const EnhancedAuth = () => {
 
   // Handle automatic tab switching when user already exists
   const handleUserExists = () => {
+    // Clear any pending confirmation state immediately
+    setPendingConfirmation(false);
+    localStorage.removeItem('pending_email_confirmation');
+    
+    // Switch to sign-in tab
     setActiveTab('signin');
+    
+    // Clear any form errors
+    setFormErrors({});
+    
     addFeedbackMessage({
       type: 'info',
       title: "Account already exists! 🎉",

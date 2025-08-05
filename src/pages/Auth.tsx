@@ -137,7 +137,16 @@ const Auth = () => {
 
   // Handle automatic tab switching when user already exists
   const handleUserExists = () => {
+    // Clear any pending confirmation state immediately
+    setPendingConfirmation(false);
+    localStorage.removeItem('pending_email_confirmation');
+    
+    // Switch to sign-in tab
     setActiveTab('signin');
+    
+    // Clear any form errors
+    setFormErrors({});
+    
     toast({
       title: "Account already exists! 🎉",
       description: "We found your account. Please sign in with your password.",
