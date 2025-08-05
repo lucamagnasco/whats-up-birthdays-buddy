@@ -44,17 +44,27 @@ serve(async (req) => {
     let templateIdToUse: string;
 
     if (messageId) {
-      // Get pending message from database
-      const { data: message, error: messageError } = await supabase
+      // Get pending message from database with better error handling
+      const { data: messages, error: messageError } = await supabase
         .from('birthday_messages')
         .select('*')
         .eq('id', messageId)
-        .in('status', ['pending', 'processing'])
-        .single();
+        .in('status', ['pending', 'processing']);
 
-      if (messageError || !message) {
-        throw new Error(`Message not found or already sent: ${messageError?.message || 'No message found'}`);
+      if (messageError) {
+        throw new Error(`Database error: ${messageError.message}`);
       }
+
+      if (!messages || messages.length === 0) {
+        throw new Error(`Message not found or already processed: ${messageId}`);
+      }
+
+      if (messages.length > 1) {
+        // Multiple messages found - this shouldn't happen, but let's handle it
+        console.warn(`Multiple messages found for ID ${messageId}, using the first one`);
+      }
+
+      const message = messages[0];
 
       console.log('Processing message:', {
         id: message.id,
