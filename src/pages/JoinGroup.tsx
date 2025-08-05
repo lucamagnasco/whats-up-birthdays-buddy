@@ -8,12 +8,23 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Calendar, Gift, MessageCircle } from "lucide-react";
+import { Users, Calendar, Gift, MessageCircle, AlertCircle, CheckCircle } from "lucide-react";
+import { LoadingSpinner } from "@/components/LoadingStates";
+import { Validator } from "@/lib/validation";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface Group {
   id: string;
   name: string;
   description: string;
+}
+
+interface FormErrors {
+  name?: string;
+  birthday?: string;
+  whatsapp_number?: string;
+  likes?: string;
+  gift_wishes?: string;
 }
 
 const JoinGroup = () => {
@@ -24,6 +35,8 @@ const JoinGroup = () => {
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [fieldStatus, setFieldStatus] = useState<Record<string, 'idle' | 'validating' | 'valid' | 'invalid'>>({});
   const { toast } = useToast();
   
   // Member data form with persistence
@@ -64,6 +77,70 @@ const JoinGroup = () => {
     };
   }, [inviteCode]);
 
+  // Real-time validation
+  const validateField = (field: string, value: string) => {
+    const errors: FormErrors = {};
+    
+    switch (field) {
+      case 'name':
+        if (!value.trim()) {
+          errors.name = 'Name is required';
+          setFieldStatus(prev => ({ ...prev, name: 'invalid' }));
+        } else if (value.length < 2) {
+          errors.name = 'Name must be at least 2 characters';
+          setFieldStatus(prev => ({ ...prev, name: 'invalid' }));
+        } else {
+          setFieldStatus(prev => ({ ...prev, name: 'valid' }));
+        }
+        break;
+      case 'birthday':
+        if (!value) {
+          errors.birthday = 'Birthday is required';
+          setFieldStatus(prev => ({ ...prev, birthday: 'invalid' }));
+        } else {
+          const validation = Validator.validateBirthday(value);
+          if (!validation.isValid) {
+            errors.birthday = validation.errors[0];
+            setFieldStatus(prev => ({ ...prev, birthday: 'invalid' }));
+          } else {
+            setFieldStatus(prev => ({ ...prev, birthday: 'valid' }));
+          }
+        }
+        break;
+      case 'whatsapp_number':
+        if (!value) {
+          errors.whatsapp_number = 'WhatsApp number is required';
+          setFieldStatus(prev => ({ ...prev, whatsapp_number: 'invalid' }));
+        } else {
+          const validation = Validator.validatePhoneNumber(value);
+          if (!validation.isValid) {
+            errors.whatsapp_number = validation.errors[0];
+            setFieldStatus(prev => ({ ...prev, whatsapp_number: 'invalid' }));
+          } else {
+            setFieldStatus(prev => ({ ...prev, whatsapp_number: 'valid' }));
+          }
+        }
+        break;
+    }
+    
+    return errors;
+  };
+
+  // Handle field changes with validation
+  const handleFieldChange = (field: string, value: string) => {
+    setMemberData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear previous error for this field
+    setFormErrors(prev => ({ ...prev, [field]: undefined }));
+    
+    // Validate field if it has a value
+    if (value.trim()) {
+      const fieldErrors = validateField(field, value);
+      setFormErrors(prev => ({ ...prev, ...fieldErrors }));
+    } else {
+      setFieldStatus(prev => ({ ...prev, [field]: 'idle' }));
+    }
+  };
 
   useEffect(() => {
     if (inviteCode) {
@@ -80,6 +157,7 @@ const JoinGroup = () => {
 
   const fetchGroupInfo = async () => {
     try {
+      setLoading(true);
       console.log("Fetching group info for invite code:", inviteCode);
       
       const { data: group, error } = await supabase
@@ -93,17 +171,25 @@ const JoinGroup = () => {
 
       if (error || !group) {
         console.error("Group not found or error:", error);
-        throw new Error("Invalid invite code or group no longer exists");
+        const appError = ErrorHandler.handleError(error || new Error("Invalid invite code or group no longer exists"));
+        toast({
+          title: appError.userMessage,
+          description: appError.action,
+          variant: appError.severity === 'error' ? 'destructive' : 'default',
+        });
+        navigate('/');
+        return;
       }
 
       console.log("Group found:", group);
       setGroup(group);
     } catch (error: any) {
       console.error("Fetch group info error:", error);
+      const appError = ErrorHandler.handleError(error);
       toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
+        title: appError.userMessage,
+        description: appError.action,
+        variant: appError.severity === 'error' ? 'destructive' : 'default',
       });
       navigate('/');
     } finally {
@@ -111,10 +197,32 @@ const JoinGroup = () => {
     }
   };
 
-
   const joinGroupAnonymously = async () => {
     try {
       if (!group) throw new Error("Group information not found");
+
+      // Validate all required fields before submission
+      const requiredFields = ['name', 'birthday', 'whatsapp_number'];
+      const validationErrors: FormErrors = {};
+      
+      requiredFields.forEach(field => {
+        const value = memberData[field as keyof typeof memberData];
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          validationErrors[field as keyof FormErrors] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+        }
+      });
+
+      if (Object.keys(validationErrors).length > 0) {
+        setFormErrors(validationErrors);
+        toast({
+          title: "Please complete all required fields",
+          description: "Please fill in all required fields before joining the group",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setJoining(true);
 
       // Check if someone with the same WhatsApp number already exists in this group
       const { data: existingMember } = await supabase
@@ -166,7 +274,15 @@ const JoinGroup = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        const appError = ErrorHandler.handleError(error);
+        toast({
+          title: appError.userMessage,
+          description: appError.action,
+          variant: appError.severity === 'error' ? 'destructive' : 'default',
+        });
+        return;
+      }
 
       // Store anonymous group membership info in localStorage
       const anonymousGroups = JSON.parse(localStorage.getItem('anonymousGroups') || '[]');
@@ -209,10 +325,11 @@ const JoinGroup = () => {
 
     } catch (error: any) {
       console.error("Join group error:", error);
+      const appError = ErrorHandler.handleError(error);
       toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
+        title: appError.userMessage,
+        description: appError.action,
+        variant: appError.severity === 'error' ? 'destructive' : 'default',
       });
       setJoining(false);
     }
@@ -252,11 +369,16 @@ const JoinGroup = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading group information...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-celebration/5 to-birthday/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <LoadingSpinner 
+              size="lg" 
+              text="Finding your group..." 
+              className="mt-4" 
+            />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -282,28 +404,56 @@ const JoinGroup = () => {
         <CardContent>
           <form onSubmit={handleJoinSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Your Name</Label>
-              <Input
-                id="name"
-                value={memberData.name}
-                onChange={(e) => setMemberData({ ...memberData, name: e.target.value })}
-                placeholder="Your full name"
-                required
-              />
+              <Label htmlFor="name">Your Name *</Label>
+              <div className="relative">
+                <Input
+                  id="name"
+                  value={memberData.name}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  placeholder="Your full name"
+                  required
+                  className={`${fieldStatus.name === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.name === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                />
+                {fieldStatus.name === 'valid' && (
+                  <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                )}
+                {fieldStatus.name === 'invalid' && (
+                  <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                )}
+              </div>
+              {fieldStatus.name === 'invalid' && formErrors.name && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {formErrors.name}
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="birthday">Birthday</Label>
+              <Label htmlFor="birthday">Birthday *</Label>
               <div className="relative">
                 <Input
                   id="birthday"
                   type="date"
                   value={memberData.birthday}
-                  onChange={(e) => setMemberData({ ...memberData, birthday: e.target.value })}
+                  onChange={(e) => handleFieldChange('birthday', e.target.value)}
                   required
+                  className={`${fieldStatus.birthday === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.birthday === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
                 />
                 <Calendar className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+                {fieldStatus.birthday === 'valid' && (
+                  <CheckCircle className="absolute right-8 top-3 h-4 w-4 text-green-500" />
+                )}
+                {fieldStatus.birthday === 'invalid' && (
+                  <AlertCircle className="absolute right-8 top-3 h-4 w-4 text-red-500" />
+                )}
               </div>
+              {fieldStatus.birthday === 'invalid' && formErrors.birthday && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {formErrors.birthday}
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -311,9 +461,16 @@ const JoinGroup = () => {
               <Input
                 id="likes"
                 value={memberData.likes}
-                onChange={(e) => setMemberData({ ...memberData, likes: e.target.value })}
+                onChange={(e) => handleFieldChange('likes', e.target.value)}
                 placeholder="e.g., coffee, books, music..."
+                className={`${fieldStatus.likes === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.likes === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
               />
+              {fieldStatus.likes === 'invalid' && formErrors.likes && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {formErrors.likes}
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -322,25 +479,47 @@ const JoinGroup = () => {
                 <Input
                   id="gift_wishes"
                   value={memberData.gift_wishes}
-                  onChange={(e) => setMemberData({ ...memberData, gift_wishes: e.target.value })}
+                  onChange={(e) => handleFieldChange('gift_wishes', e.target.value)}
                   placeholder="What would you like as a gift?"
+                  className={`${fieldStatus.gift_wishes === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.gift_wishes === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
                 />
                 <Gift className="absolute right-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+                {fieldStatus.gift_wishes === 'invalid' && formErrors.gift_wishes && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {formErrors.gift_wishes}
+                  </p>
+                )}
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="whatsapp">WhatsApp Number</Label>
-              <PhoneInput
-                id="whatsapp"
-                value={memberData.whatsapp_number}
-                onChange={(value) => setMemberData({ ...memberData, whatsapp_number: value })}
-                placeholder="Phone number"
-                required
-              />
+              <Label htmlFor="whatsapp">WhatsApp Number *</Label>
+              <div className="relative">
+                <PhoneInput
+                  id="whatsapp"
+                  value={memberData.whatsapp_number}
+                  onChange={(value) => handleFieldChange('whatsapp_number', value)}
+                  placeholder="Phone number"
+                  required
+                  className={`${fieldStatus.whatsapp_number === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.whatsapp_number === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                />
+                {fieldStatus.whatsapp_number === 'valid' && (
+                  <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                )}
+                {fieldStatus.whatsapp_number === 'invalid' && (
+                  <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Include country and zone code for WhatsApp notifications: +5411AAAABBBB
               </p>
+              {fieldStatus.whatsapp_number === 'invalid' && formErrors.whatsapp_number && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {formErrors.whatsapp_number}
+                </p>
+              )}
             </div>
             
             <div className="p-3 bg-muted/50 rounded-lg mb-4">
@@ -350,7 +529,14 @@ const JoinGroup = () => {
             </div>
             
             <Button type="submit" className="w-full" disabled={joining}>
-              {joining ? "Joining..." : "Join Group"}
+              {joining ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" text="" />
+                  Joining...
+                </div>
+              ) : (
+                "Join Group"
+              )}
             </Button>
           </form>
         </CardContent>

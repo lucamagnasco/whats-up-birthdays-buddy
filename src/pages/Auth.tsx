@@ -7,8 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, ArrowLeft, Mail } from "lucide-react";
+import { Gift, ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { LoadingSpinner } from "@/components/LoadingStates";
+import { Validator } from "@/lib/validation";
+import { ErrorHandler } from "@/lib/errorHandler";
+
+interface FormErrors {
+  emailOrPhone?: string;
+  password?: string;
+}
+
+interface PasswordStrength {
+  score: number;
+  label: 'Weak' | 'Medium' | 'Strong';
+  color: 'red' | 'yellow' | 'green';
+}
 
 const Auth = () => {
   const [emailOrPhone, setEmailOrPhone] = useState("");
@@ -18,6 +32,10 @@ const Auth = () => {
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [fieldStatus, setFieldStatus] = useState<Record<string, 'idle' | 'validating' | 'valid' | 'invalid'>>({});
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -31,6 +49,83 @@ const Auth = () => {
       navigate("/groups");
     } else {
       navigate("/");
+    }
+  };
+
+  // Password strength calculator
+  const calculatePasswordStrength = (password: string): PasswordStrength => {
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    
+    return {
+      score,
+      label: score < 2 ? 'Weak' : score < 4 ? 'Medium' : 'Strong',
+      color: score < 2 ? 'red' : score < 4 ? 'yellow' : 'green'
+    };
+  };
+
+  // Real-time validation
+  const validateField = (field: string, value: string) => {
+    const errors: FormErrors = {};
+    
+    switch (field) {
+      case 'emailOrPhone':
+        if (!value.trim()) {
+          errors.emailOrPhone = 'Email is required';
+          setFieldStatus(prev => ({ ...prev, emailOrPhone: 'invalid' }));
+        } else {
+          const validation = Validator.validateEmail(value);
+          if (!validation.isValid) {
+            errors.emailOrPhone = validation.errors[0];
+            setFieldStatus(prev => ({ ...prev, emailOrPhone: 'invalid' }));
+          } else {
+            setFieldStatus(prev => ({ ...prev, emailOrPhone: 'valid' }));
+          }
+        }
+        break;
+      case 'password':
+        if (!value) {
+          errors.password = 'Password is required';
+          setFieldStatus(prev => ({ ...prev, password: 'invalid' }));
+        } else if (value.length < 6) {
+          errors.password = 'Password must be at least 6 characters';
+          setFieldStatus(prev => ({ ...prev, password: 'invalid' }));
+        } else {
+          setFieldStatus(prev => ({ ...prev, password: 'valid' }));
+        }
+        break;
+    }
+    
+    return errors;
+  };
+
+  // Handle field changes with validation
+  const handleFieldChange = (field: string, value: string) => {
+    if (field === 'emailOrPhone') {
+      setEmailOrPhone(value);
+    } else if (field === 'password') {
+      setPassword(value);
+      // Calculate password strength for password field
+      if (value) {
+        setPasswordStrength(calculatePasswordStrength(value));
+      } else {
+        setPasswordStrength(null);
+      }
+    }
+    
+    // Clear previous error for this field
+    setFormErrors(prev => ({ ...prev, [field]: undefined }));
+    
+    // Validate field if it has a value
+    if (value.trim()) {
+      const fieldErrors = validateField(field, value);
+      setFormErrors(prev => ({ ...prev, ...fieldErrors }));
+    } else {
+      setFieldStatus(prev => ({ ...prev, [field]: 'idle' }));
     }
   };
 
@@ -273,6 +368,27 @@ const Auth = () => {
         throw new Error("Please use a valid email address for sign up");
       }
 
+      // Validate all required fields before submission
+      const requiredFields = ['emailOrPhone', 'password'];
+      const validationErrors: FormErrors = {};
+      
+      requiredFields.forEach(field => {
+        const value = field === 'emailOrPhone' ? emailOrPhone : password;
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          validationErrors[field as keyof FormErrors] = `${field === 'emailOrPhone' ? 'Email' : 'Password'} is required`;
+        }
+      });
+
+      if (Object.keys(validationErrors).length > 0) {
+        setFormErrors(validationErrors);
+        toast({
+          title: "Please complete all required fields",
+          description: "Please fill in all required fields before creating your account",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Try to sign up the user
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
@@ -286,26 +402,13 @@ const Auth = () => {
           type: error.constructor.name,
         });
 
-        // Provide more user-friendly error messages
-        if (error.message.includes("Password should be at least 6 characters")) {
-          throw new Error("Password must be at least 6 characters long");
-        }
-        if (error.message.includes("User already registered") || error.message.includes("already been registered")) {
-          // User already exists - suggest they sign in instead
-          toast({
-            title: "Account already exists",
-            description: "An account with this email already exists. Please try signing in instead.",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (error.message.includes("Unable to send email")) {
-          throw new Error("Unable to send confirmation email. This might be due to SMTP configuration. Please contact support or try again later.");
-        }
-        if (error.message.includes("email rate limit exceeded")) {
-          throw new Error("⚠️ DIAGNOSIS: Email rate limit reached. This suggests: 1) Email confirmations are enabled in your dashboard (but disabled locally), or 2) SMTP rate limits need to be increased. Check Authentication → Rate Limits in your Supabase dashboard.");
-        }
-        throw error;
+        const appError = ErrorHandler.handleError(error);
+        toast({
+          title: appError.userMessage,
+          description: appError.action,
+          variant: appError.severity === 'error' ? 'destructive' : 'default',
+        });
+        return;
       }
 
       // If there's a pending group, associate it with the user
@@ -356,10 +459,11 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("Signup error:", error);
+      const appError = ErrorHandler.handleError(error);
       toast({
-        title: "Sign Up Error",
-        description: error.message,
-        variant: "destructive",
+        title: appError.userMessage,
+        description: appError.action,
+        variant: appError.severity === 'error' ? 'destructive' : 'default',
       });
     } finally {
       setLoading(false);
@@ -376,6 +480,27 @@ const Auth = () => {
         throw new Error("Please use your email address to sign in. Phone number sign-in is not currently supported.");
       }
 
+      // Validate all required fields before submission
+      const requiredFields = ['emailOrPhone', 'password'];
+      const validationErrors: FormErrors = {};
+      
+      requiredFields.forEach(field => {
+        const value = field === 'emailOrPhone' ? emailOrPhone : password;
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          validationErrors[field as keyof FormErrors] = `${field === 'emailOrPhone' ? 'Email' : 'Password'} is required`;
+        }
+      });
+
+      if (Object.keys(validationErrors).length > 0) {
+        setFormErrors(validationErrors);
+        toast({
+          title: "Please complete all required fields",
+          description: "Please fill in all required fields before signing in",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Try to sign in with email
       const { data, error } = await supabase.auth.signInWithPassword({
         email: emailOrPhone,
@@ -384,11 +509,13 @@ const Auth = () => {
 
       if (error) {
         console.error("Auth: Sign-in error:", error);
-        // Provide more user-friendly error messages
-        if (error.message.includes("Invalid login credentials")) {
-          throw new Error("Invalid email or password. Please check your credentials and try again.");
-        }
-        throw error;
+        const appError = ErrorHandler.handleError(error);
+        toast({
+          title: appError.userMessage,
+          description: appError.action,
+          variant: appError.severity === 'error' ? 'destructive' : 'default',
+        });
+        return;
       }
 
       // Store remember me preference
@@ -409,14 +536,15 @@ const Auth = () => {
       } else {
         navigate("/groups");
       }
-          } catch (error: any) {
-        console.error("Sign-in error:", error);
-        toast({
-          title: "Sign In Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
+    } catch (error: any) {
+      console.error("Sign-in error:", error);
+      const appError = ErrorHandler.handleError(error);
+      toast({
+        title: appError.userMessage,
+        description: appError.action,
+        variant: appError.severity === 'error' ? 'destructive' : 'default',
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -511,28 +639,91 @@ const Auth = () => {
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email-phone">Email Address</Label>
-                  <Input
-                    id="email-phone"
-                    type="email"
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      value={emailOrPhone}
+                      onChange={(e) => handleFieldChange('emailOrPhone', e.target.value)}
+                      placeholder="your@email.com"
+                      required
+                      className={`${fieldStatus.emailOrPhone === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.emailOrPhone === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                    />
+                    {fieldStatus.emailOrPhone === 'valid' && (
+                      <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                    )}
+                    {fieldStatus.emailOrPhone === 'invalid' && (
+                      <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  {fieldStatus.emailOrPhone === 'invalid' && formErrors.emailOrPhone && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.emailOrPhone}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Enter your email address to sign in
                   </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => handleFieldChange('password', e.target.value)}
+                      required
+                      className={`${fieldStatus.password === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.password === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    {fieldStatus.password === 'valid' && (
+                      <CheckCircle className="absolute right-10 top-3 h-4 w-4 text-green-500" />
+                    )}
+                    {fieldStatus.password === 'invalid' && (
+                      <AlertCircle className="absolute right-10 top-3 h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  {fieldStatus.password === 'invalid' && formErrors.password && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.password}
+                    </p>
+                  )}
+                  {passwordStrength && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span>Password strength:</span>
+                      <span className={`font-medium ${
+                        passwordStrength.color === 'red' ? 'text-red-500' : 
+                        passwordStrength.color === 'yellow' ? 'text-yellow-500' : 
+                        'text-green-500'
+                      }`}>
+                        {passwordStrength.label}
+                      </span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-1 w-4 rounded ${
+                              level <= passwordStrength.score
+                                ? passwordStrength.color === 'red' ? 'bg-red-500' :
+                                  passwordStrength.color === 'yellow' ? 'bg-yellow-500' :
+                                  'bg-green-500'
+                                : 'bg-gray-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -545,7 +736,14 @@ const Auth = () => {
                   </Label>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" text="" />
+                      Signing in...
+                    </div>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -554,32 +752,102 @@ const Auth = () => {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={emailOrPhone}
+                      onChange={(e) => handleFieldChange('emailOrPhone', e.target.value)}
+                      placeholder="your@email.com"
+                      required
+                      className={`${fieldStatus.emailOrPhone === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.emailOrPhone === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                    />
+                    {fieldStatus.emailOrPhone === 'valid' && (
+                      <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                    )}
+                    {fieldStatus.emailOrPhone === 'invalid' && (
+                      <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  {fieldStatus.emailOrPhone === 'invalid' && formErrors.emailOrPhone && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.emailOrPhone}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Use a valid email address for account creation
                   </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => handleFieldChange('password', e.target.value)}
+                      required
+                      minLength={6}
+                      className={`${fieldStatus.password === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.password === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    {fieldStatus.password === 'valid' && (
+                      <CheckCircle className="absolute right-10 top-3 h-4 w-4 text-green-500" />
+                    )}
+                    {fieldStatus.password === 'invalid' && (
+                      <AlertCircle className="absolute right-10 top-3 h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  {fieldStatus.password === 'invalid' && formErrors.password && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.password}
+                    </p>
+                  )}
+                  {passwordStrength && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span>Password strength:</span>
+                      <span className={`font-medium ${
+                        passwordStrength.color === 'red' ? 'text-red-500' : 
+                        passwordStrength.color === 'yellow' ? 'text-yellow-500' : 
+                        'text-green-500'
+                      }`}>
+                        {passwordStrength.label}
+                      </span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-1 w-4 rounded ${
+                              level <= passwordStrength.score
+                                ? passwordStrength.color === 'red' ? 'bg-red-500' :
+                                  passwordStrength.color === 'yellow' ? 'bg-yellow-500' :
+                                  'bg-green-500'
+                                : 'bg-gray-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" text="" />
+                      Creating account...
+                    </div>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
               </form>
             </TabsContent>

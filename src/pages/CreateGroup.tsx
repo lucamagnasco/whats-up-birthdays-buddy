@@ -9,7 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, ArrowLeft, Copy, MessageCircle, User, Mail } from "lucide-react";
+import { Users, ArrowLeft, Copy, MessageCircle, User, Mail, AlertCircle, CheckCircle } from "lucide-react";
+import { LoadingSpinner } from "@/components/LoadingStates";
+import { Validator } from "@/lib/validation";
+import { ErrorHandler } from "@/lib/errorHandler";
+
+interface FormErrors {
+  name?: string;
+  description?: string;
+}
+
 const CreateGroup = () => {
   const [groupData, setGroupData] = useState({
     name: "",
@@ -23,6 +32,8 @@ const CreateGroup = () => {
   const [createdGroup, setCreatedGroup] = useState<any>(null);
   const [editingDescription, setEditingDescription] = useState(false);
   const [tempDescription, setTempDescription] = useState("");
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [fieldStatus, setFieldStatus] = useState<Record<string, 'idle' | 'validating' | 'valid' | 'invalid'>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -40,6 +51,54 @@ const CreateGroup = () => {
     setShowSuccessDialog(open);
     if (!open) {
       navigate("/groups");
+    }
+  };
+
+  // Real-time validation
+  const validateField = (field: string, value: string) => {
+    const errors: FormErrors = {};
+    
+    switch (field) {
+      case 'name':
+        if (!value.trim()) {
+          errors.name = 'Group name is required';
+          setFieldStatus(prev => ({ ...prev, name: 'invalid' }));
+        } else if (value.length < 3) {
+          errors.name = 'Group name must be at least 3 characters';
+          setFieldStatus(prev => ({ ...prev, name: 'invalid' }));
+        } else if (value.length > 50) {
+          errors.name = 'Group name must be less than 50 characters';
+          setFieldStatus(prev => ({ ...prev, name: 'invalid' }));
+        } else {
+          setFieldStatus(prev => ({ ...prev, name: 'valid' }));
+        }
+        break;
+      case 'description':
+        if (value.length > 500) {
+          errors.description = 'Description must be less than 500 characters';
+          setFieldStatus(prev => ({ ...prev, description: 'invalid' }));
+        } else {
+          setFieldStatus(prev => ({ ...prev, description: 'valid' }));
+        }
+        break;
+    }
+    
+    return errors;
+  };
+
+  // Handle field changes with validation
+  const handleFieldChange = (field: string, value: string) => {
+    setGroupData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear previous error for this field
+    setFormErrors(prev => ({ ...prev, [field]: undefined }));
+    
+    // Validate field if it has a value
+    if (value.trim()) {
+      const fieldErrors = validateField(field, value);
+      setFormErrors(prev => ({ ...prev, ...fieldErrors }));
+    } else {
+      setFieldStatus(prev => ({ ...prev, [field]: 'idle' }));
     }
   };
 
@@ -74,10 +133,22 @@ const CreateGroup = () => {
     console.log("CreateGroup: Starting form submission");
     console.log("CreateGroup: Current user:", currentUser);
 
-    if (!groupData.name.trim()) {
+    // Validate all required fields before submission
+    const requiredFields = ['name'];
+    const validationErrors: FormErrors = {};
+    
+    requiredFields.forEach(field => {
+      const value = groupData[field as keyof typeof groupData];
+      if (!value || (typeof value === 'string' && !value.trim())) {
+        validationErrors[field as keyof FormErrors] = `${field === 'name' ? 'Group name' : field} is required`;
+      }
+    });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
       toast({
-        title: "Group name required",
-        description: "Please enter a name for your group",
+        title: "Please complete all required fields",
+        description: "Please fill in all required fields before creating your group",
         variant: "destructive",
       });
       return;
@@ -121,7 +192,13 @@ const CreateGroup = () => {
 
       if (error) {
         console.error("CreateGroup: Supabase error:", error);
-        throw error;
+        const appError = ErrorHandler.handleError(error);
+        toast({
+          title: appError.userMessage,
+          description: appError.action,
+          variant: appError.severity === 'error' ? 'destructive' : 'default',
+        });
+        return;
       }
 
       console.log("CreateGroup: Group created successfully:", group);
@@ -174,10 +251,11 @@ const CreateGroup = () => {
 
     } catch (error: any) {
       console.error("CreateGroup: Caught error:", error);
+      const appError = ErrorHandler.handleError(error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create group",
-        variant: "destructive",
+        title: appError.userMessage,
+        description: appError.action,
+        variant: appError.severity === 'error' ? 'destructive' : 'default',
       });
     } finally {
       setLoading(false);
@@ -278,18 +356,40 @@ const CreateGroup = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="group-name">Group Name *</Label>
-              <Input
-                id="group-name"
-                type="text"
-                value={groupData.name}
-                onChange={(e) => setGroupData({ ...groupData, name: e.target.value })}
-                placeholder="Family, Friends, Office Team..."
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="group-name"
+                  type="text"
+                  value={groupData.name}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  placeholder="Family, Friends, Office Team..."
+                  required
+                  className={`${fieldStatus.name === 'valid' ? 'border-green-500 focus:border-green-500' : ''} ${fieldStatus.name === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}`}
+                />
+                {fieldStatus.name === 'valid' && (
+                  <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                )}
+                {fieldStatus.name === 'invalid' && (
+                  <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                )}
+              </div>
+              {fieldStatus.name === 'invalid' && formErrors.name && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {formErrors.name}
+                </p>
+              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating Group..." : "Create Group"}
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" text="" />
+                  Creating Group...
+                </div>
+              ) : (
+                "Create Group"
+              )}
             </Button>
           </form>
         </CardContent>
@@ -337,10 +437,13 @@ const CreateGroup = () => {
                     <div className="space-y-2">
                       <Textarea
                         value={tempDescription}
-                        onChange={(e) => setTempDescription(e.target.value)}
+                        onChange={(e) => handleFieldChange('description', e.target.value)}
                         placeholder="Tell everyone what this group is about"
-                        className="h-20 text-sm"
+                        className={`h-20 text-sm ${fieldStatus.description === 'invalid' ? 'border-red-500' : ''}`}
                       />
+                      {fieldStatus.description === 'invalid' && (
+                        <p className="text-xs text-red-500 mt-1">{formErrors.description}</p>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           size="sm"
