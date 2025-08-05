@@ -25,6 +25,7 @@ const EnhancedAuth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [feedbackMessages, setFeedbackMessages] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('signin');
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,6 +33,11 @@ const EnhancedAuth = () => {
   
   const flow = searchParams.get('flow') || 'signin';
   const context = searchParams.get('context');
+
+  // Initialize active tab based on flow parameter
+  useEffect(() => {
+    setActiveTab(flow);
+  }, [flow]);
 
   // Smart back navigation - goes to dashboard if authenticated, landing page if not
   const handleBackNavigation = () => {
@@ -75,6 +81,18 @@ const EnhancedAuth = () => {
   // Clear form errors
   const clearFormErrors = () => {
     setFormErrors({});
+  };
+
+  // Handle automatic tab switching when user already exists
+  const handleUserExists = () => {
+    setActiveTab('signin');
+    addFeedbackMessage({
+      type: 'info',
+      title: "Account already exists! 🎉",
+      description: "We found your account. Please sign in with your password.",
+      autoDismiss: true,
+      dismissAfter: 5000
+    });
   };
 
   useEffect(() => {
@@ -358,6 +376,13 @@ const EnhancedAuth = () => {
       });
 
       if (error) {
+        // Check if user already exists
+        if (error.message?.includes('User already registered') || 
+            error.message?.includes('already been registered') ||
+            error.code === 'auth/email-already-in-use') {
+          handleUserExists();
+          return;
+        }
         throw error;
       }
 
@@ -409,6 +434,15 @@ const EnhancedAuth = () => {
       }
     } catch (error: any) {
       console.error("Signup error:", error);
+      
+      // Check if user already exists
+      if (error.message?.includes('User already registered') || 
+          error.message?.includes('already been registered') ||
+          error.code === 'auth/email-already-in-use') {
+        handleUserExists();
+        return;
+      }
+      
       const appError = ErrorHandler.handleError(error);
       addFeedbackMessage({
         type: 'error',
@@ -568,7 +602,7 @@ const EnhancedAuth = () => {
               </div>
             </div>
           ) : (
-            <Tabs defaultValue={flow} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>

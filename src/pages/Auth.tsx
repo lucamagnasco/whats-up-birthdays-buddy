@@ -36,12 +36,18 @@ const Auth = () => {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [fieldStatus, setFieldStatus] = useState<Record<string, 'idle' | 'validating' | 'valid' | 'invalid'>>({});
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('signin');
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   
   const flow = searchParams.get('flow') || 'signin';
   const context = searchParams.get('context');
+
+  // Initialize active tab based on flow parameter
+  useEffect(() => {
+    setActiveTab(flow);
+  }, [flow]);
 
   // Smart back navigation - goes to dashboard if authenticated, landing page if not
   const handleBackNavigation = () => {
@@ -127,6 +133,15 @@ const Auth = () => {
     } else {
       setFieldStatus(prev => ({ ...prev, [field]: 'idle' }));
     }
+  };
+
+  // Handle automatic tab switching when user already exists
+  const handleUserExists = () => {
+    setActiveTab('signin');
+    toast({
+      title: "Account already exists! 🎉",
+      description: "We found your account. Please sign in with your password.",
+    });
   };
 
   useEffect(() => {
@@ -402,6 +417,14 @@ const Auth = () => {
           type: error.constructor.name,
         });
 
+        // Check if user already exists
+        if (error.message?.includes('User already registered') || 
+            error.message?.includes('already been registered') ||
+            error.code === 'auth/email-already-in-use') {
+          handleUserExists();
+          return;
+        }
+
         const appError = ErrorHandler.handleError(error);
         toast({
           title: appError.userMessage,
@@ -459,6 +482,15 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("Signup error:", error);
+      
+      // Check if user already exists
+      if (error.message?.includes('User already registered') || 
+          error.message?.includes('already been registered') ||
+          error.code === 'auth/email-already-in-use') {
+        handleUserExists();
+        return;
+      }
+      
       const appError = ErrorHandler.handleError(error);
       toast({
         title: appError.userMessage,
@@ -630,7 +662,7 @@ const Auth = () => {
               </div>
             </div>
           ) : (
-            <Tabs defaultValue={flow} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -725,15 +757,31 @@ const Auth = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember-me"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  />
-                  <Label htmlFor="remember-me" className="text-sm">
-                    Remember me
-                  </Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    />
+                    <Label htmlFor="remember-me" className="text-sm">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-muted-foreground hover:text-foreground p-0 h-auto"
+                    onClick={() => {
+                      // Redirect to Supabase's default reset password page
+                      const redirectUrl = window.location.hostname === 'localhost' 
+                        ? 'https://localhost:3000/auth'
+                        : 'https://no-cuelgues.vercel.app/auth';
+                      window.location.href = `https://mxprusqbnjhbqstmrgkt.supabase.co/auth/v1/recover?redirect_to=${encodeURIComponent(redirectUrl)}`;
+                    }}
+                  >
+                    Forgot password?
+                  </Button>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
