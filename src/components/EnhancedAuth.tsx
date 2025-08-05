@@ -7,10 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, ArrowLeft, Mail } from "lucide-react";
+import { Gift, ArrowLeft, Mail, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ErrorHandler } from "@/lib/errorHandler";
+import { Validator } from "@/lib/validation";
+import { LoadingSpinner, LoadingOverlay } from "@/components/LoadingStates";
+import { UserFeedback, SuccessCard, ErrorCard } from "@/components/UserFeedback";
 
-const Auth = () => {
+const EnhancedAuth = () => {
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -18,6 +22,10 @@ const Auth = () => {
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [feedbackMessages, setFeedbackMessages] = useState<any[]>([]);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -34,6 +42,41 @@ const Auth = () => {
     }
   };
 
+  // Add feedback message
+  const addFeedbackMessage = (message: any) => {
+    const id = Date.now().toString();
+    setFeedbackMessages(prev => [...prev, { ...message, id }]);
+  };
+
+  // Remove feedback message
+  const removeFeedbackMessage = (id: string) => {
+    setFeedbackMessages(prev => prev.filter(msg => msg.id !== id));
+  };
+
+  // Validate form data
+  const validateForm = (data: { emailOrPhone: string; password: string }) => {
+    const errors: Record<string, string> = {};
+    
+    // Validate email
+    const emailValidation = Validator.validateEmail(data.emailOrPhone);
+    if (!emailValidation.isValid) {
+      errors.emailOrPhone = emailValidation.errors[0];
+    }
+    
+    // Validate password
+    const passwordValidation = Validator.validatePassword(data.password);
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errors[0];
+    }
+    
+    return errors;
+  };
+
+  // Clear form errors
+  const clearFormErrors = () => {
+    setFormErrors({});
+  };
+
   useEffect(() => {
     /*
       Handle auth callback and session management.
@@ -46,21 +89,31 @@ const Auth = () => {
         
         if (sessionError) {
           console.error("Session error:", sessionError);
+          const appError = ErrorHandler.handleError(sessionError);
+          addFeedbackMessage({
+            type: 'error',
+            title: appError.userMessage,
+            description: appError.action,
+            autoDismiss: true,
+            dismissAfter: 5000
+          });
         }
 
         // Set up auth state change listener to handle confirmations
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
-            // Essential logging for production monitoring
             if (event === 'SIGNED_IN' && session?.user) {
               // Clear any pending confirmations
               localStorage.removeItem('pending_email_confirmation');
               setPendingConfirmation(false);
 
               // Show success message
-              toast({
+              addFeedbackMessage({
+                type: 'success',
                 title: "Email confirmed! 🎉",
                 description: "Welcome to Birthday Buddy!",
+                autoDismiss: true,
+                dismissAfter: 3000
               });
 
               // Handle pending group associations
@@ -76,6 +129,14 @@ const Auth = () => {
                   localStorage.removeItem('pendingGroupName');
                 } catch (groupError) {
                   console.error("Error associating group:", groupError);
+                  const appError = ErrorHandler.handleError(groupError);
+                  addFeedbackMessage({
+                    type: 'warning',
+                    title: "Group Association Warning",
+                    description: appError.userMessage,
+                    autoDismiss: true,
+                    dismissAfter: 5000
+                  });
                 }
               }
 
@@ -89,7 +150,7 @@ const Auth = () => {
                 sessionStorage.removeItem('auth_context');
                 setTimeout(() => {
                   window.location.href = redirectTo;
-                }, 1000); // Small delay to show success message
+                }, 1000);
               } else {
                 setTimeout(() => {
                   navigate("/groups");
@@ -104,18 +165,14 @@ const Auth = () => {
         // Now check if we already have a valid user
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Update user state
           setCurrentUser(user);
           setIsAnonymous(false);
           
-          // Clear any pending confirmations since user is authenticated
           localStorage.removeItem('pending_email_confirmation');
           setPendingConfirmation(false);
 
-          // Check if there's a specific redirect destination
           const redirectTo = sessionStorage.getItem('redirect_to');
           
-          // If there's a pending group, associate it with the user
           const pendingGroupId = localStorage.getItem('pendingGroupId');
           if (pendingGroupId) {
             try {
@@ -131,10 +188,8 @@ const Auth = () => {
             }
           }
 
-          // Handle anonymous member upgrade
           await handleAnonymousUpgrade(user);
 
-          // Redirect based on context
           if (redirectTo) {
             sessionStorage.removeItem('redirect_to');
             sessionStorage.removeItem('auth_context');
@@ -143,18 +198,15 @@ const Auth = () => {
             navigate("/groups");
           }
         } else {
-          // No authenticated user
           setCurrentUser(null);
           setIsAnonymous(true);
           
-          // Check for pending confirmations
           const pendingEmail = localStorage.getItem('pending_email_confirmation');
           if (pendingEmail) {
             setEmailOrPhone(pendingEmail);
             setPendingConfirmation(true);
           }
           
-          // Load remembered email if available
           const rememberedUser = localStorage.getItem('rememberUser');
           if (rememberedUser && !pendingEmail) {
             setEmailOrPhone(rememberedUser);
@@ -162,10 +214,17 @@ const Auth = () => {
           }
         }
 
-        // Store subscription for cleanup
         return subscription;
       } catch (error) {
         console.error("Auth callback error:", error);
+        const appError = ErrorHandler.handleError(error);
+        addFeedbackMessage({
+          type: 'error',
+          title: appError.userMessage,
+          description: appError.action,
+          autoDismiss: true,
+          dismissAfter: 5000
+        });
         return null;
       }
     };
@@ -176,22 +235,19 @@ const Auth = () => {
       subscription = sub;
     });
 
-    // Cleanup subscription on unmount
     return () => {
       if (subscription) {
         subscription.unsubscribe();
       }
     };
-  }, [navigate, toast]);
+  }, [navigate]);
 
   const handleAnonymousUpgrade = async (user: any) => {
     try {
-      // Check for anonymous group memberships in localStorage
       const anonymousGroups = JSON.parse(localStorage.getItem('anonymousGroups') || '[]');
       
       for (const anonymousGroup of anonymousGroups) {
         if (anonymousGroup.memberId) {
-          // Update the group member to associate with the new user
           await supabase
             .from("group_members")
             .update({ user_id: user.id })
@@ -199,16 +255,26 @@ const Auth = () => {
         }
       }
 
-      // Clear anonymous groups from localStorage
       if (anonymousGroups.length > 0) {
         localStorage.removeItem('anonymousGroups');
-        toast({
+        addFeedbackMessage({
+          type: 'success',
           title: "Account linked! 🎉",
           description: `Your ${anonymousGroups.length} group membership(s) have been linked to your account.`,
+          autoDismiss: true,
+          dismissAfter: 5000
         });
       }
     } catch (error) {
       console.error("Error upgrading anonymous member:", error);
+      const appError = ErrorHandler.handleError(error);
+      addFeedbackMessage({
+        type: 'warning',
+        title: "Account Linking Warning",
+        description: appError.userMessage,
+        autoDismiss: true,
+        dismissAfter: 5000
+      });
     }
   };
 
@@ -217,10 +283,12 @@ const Auth = () => {
   const handleResendConfirmation = async () => {
     const pendingEmail = localStorage.getItem('pending_email_confirmation');
     if (!pendingEmail) {
-      toast({
+      addFeedbackMessage({
+        type: 'warning',
         title: "No pending confirmation",
         description: "No email confirmation is currently pending.",
-        variant: "destructive",
+        autoDismiss: true,
+        dismissAfter: 3000
       });
       return;
     }
@@ -230,26 +298,28 @@ const Auth = () => {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: pendingEmail,
-        // Remove custom redirect - let Supabase use default configuration
-        // options: {
-        //   emailRedirectTo: 'https://no-cuelgues.vercel.app/auth'
-        // }
       });
 
       if (error) {
         throw error;
       }
 
-      toast({
+      addFeedbackMessage({
+        type: 'success',
         title: "Confirmation email resent! 📧",
         description: "Please check your inbox and spam folder for the new confirmation link.",
+        autoDismiss: true,
+        dismissAfter: 5000
       });
     } catch (error: any) {
       console.error("Resend error:", error);
-      toast({
+      const appError = ErrorHandler.handleError(error);
+      addFeedbackMessage({
+        type: 'error',
         title: "Resend failed",
-        description: error.message || "Failed to resend confirmation email. Please try signing up again.",
-        variant: "destructive",
+        description: appError.userMessage,
+        autoDismiss: true,
+        dismissAfter: 5000
       });
     } finally {
       setLoading(false);
@@ -261,14 +331,23 @@ const Auth = () => {
     setPendingConfirmation(false);
     setEmailOrPhone('');
     setPassword('');
+    clearFormErrors();
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    clearFormErrors();
 
     try {
-      // For signup, we need an email
+      // Validate form data
+      const validationErrors = validateForm({ emailOrPhone, password });
+      if (Object.keys(validationErrors).length > 0) {
+        setFormErrors(validationErrors);
+        setLoading(false);
+        return;
+      }
+
       if (!isEmail(emailOrPhone)) {
         throw new Error("Please use a valid email address for sign up");
       }
@@ -276,36 +355,12 @@ const Auth = () => {
       const { data, error } = await supabase.auth.signUp({
         email: emailOrPhone,
         password,
-        // Remove custom redirect - let Supabase use default configuration
-        // options: {
-        //   emailRedirectTo: 'https://no-cuelgues.vercel.app/auth'
-        // }
       });
 
       if (error) {
-        console.error("❌ Signup error details:", {
-          message: error.message,
-          status: error.status,
-          type: error.constructor.name,
-        });
-
-        // Provide more user-friendly error messages
-        if (error.message.includes("Password should be at least 6 characters")) {
-          throw new Error("Password must be at least 6 characters long");
-        }
-        if (error.message.includes("User already registered")) {
-          throw new Error("An account with this email already exists. Please try signing in instead.");
-        }
-        if (error.message.includes("Unable to send email")) {
-          throw new Error("Unable to send confirmation email. This might be due to SMTP configuration. Please contact support or try again later.");
-        }
-        if (error.message.includes("email rate limit exceeded")) {
-          throw new Error("⚠️ DIAGNOSIS: Email rate limit reached. This suggests: 1) Email confirmations are enabled in your dashboard (but disabled locally), or 2) SMTP rate limits need to be increased. Check Authentication → Rate Limits in your Supabase dashboard.");
-        }
         throw error;
       }
 
-      // If there's a pending group, associate it with the user
       const pendingGroupId = localStorage.getItem('pendingGroupId');
       if (pendingGroupId && data.user) {
         try {
@@ -321,27 +376,28 @@ const Auth = () => {
         }
       }
 
-      // Check if user needs email confirmation
       if (data.user && !data.session) {
-        toast({
+        addFeedbackMessage({
+          type: 'info',
           title: "Check your email! 📧",
           description: "We've sent a confirmation link to your email. Please check your inbox and spam folder. The link will expire in 24 hours.",
+          autoDismiss: false
         });
         
-        // Store signup info for potential resend
         localStorage.setItem('pending_email_confirmation', emailOrPhone);
         setPendingConfirmation(true);
       } else if (data.session) {
-        toast({
+        addFeedbackMessage({
+          type: 'success',
           title: "Account created successfully!",
           description: "Welcome to Birthday Buddy!",
+          autoDismiss: true,
+          dismissAfter: 3000
         });
         
-        // Clear any pending confirmations since user is now signed in
         localStorage.removeItem('pending_email_confirmation');
         setPendingConfirmation(false);
         
-        // Handle redirect
         const redirectTo = sessionStorage.getItem('redirect_to');
         if (redirectTo) {
           sessionStorage.removeItem('redirect_to');
@@ -353,10 +409,13 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("Signup error:", error);
-      toast({
+      const appError = ErrorHandler.handleError(error);
+      addFeedbackMessage({
+        type: 'error',
         title: "Sign Up Error",
-        description: error.message,
-        variant: "destructive",
+        description: appError.userMessage,
+        autoDismiss: true,
+        dismissAfter: 5000
       });
     } finally {
       setLoading(false);
@@ -366,36 +425,36 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    clearFormErrors();
 
     try {
-      // For sign-in, we only support email addresses
+      // Validate form data
+      const validationErrors = validateForm({ emailOrPhone, password });
+      if (Object.keys(validationErrors).length > 0) {
+        setFormErrors(validationErrors);
+        setLoading(false);
+        return;
+      }
+
       if (!isEmail(emailOrPhone)) {
         throw new Error("Please use your email address to sign in. Phone number sign-in is not currently supported.");
       }
 
-      // Try to sign in with email
       const { data, error } = await supabase.auth.signInWithPassword({
         email: emailOrPhone,
         password,
       });
 
       if (error) {
-        console.error("Auth: Sign-in error:", error);
-        // Provide more user-friendly error messages
-        if (error.message.includes("Invalid login credentials")) {
-          throw new Error("Invalid email or password. Please check your credentials and try again.");
-        }
         throw error;
       }
 
-      // Store remember me preference
       if (rememberMe) {
         localStorage.setItem('rememberUser', emailOrPhone);
       } else {
         localStorage.removeItem('rememberUser');
       }
 
-      // Check for redirect destination
       const redirectTo = sessionStorage.getItem('redirect_to');
       const authContext = sessionStorage.getItem('auth_context');
       
@@ -406,14 +465,17 @@ const Auth = () => {
       } else {
         navigate("/groups");
       }
-          } catch (error: any) {
-        console.error("Sign-in error:", error);
-        toast({
-          title: "Sign In Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
+    } catch (error: any) {
+      console.error("Sign-in error:", error);
+      const appError = ErrorHandler.handleError(error);
+      addFeedbackMessage({
+        type: 'error',
+        title: "Sign In Error",
+        description: appError.userMessage,
+        autoDismiss: true,
+        dismissAfter: 5000
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -452,6 +514,13 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* User Feedback Messages */}
+          <UserFeedback 
+            messages={feedbackMessages} 
+            onDismiss={removeFeedbackMessage}
+            className="mb-4"
+          />
+
           {pendingConfirmation ? (
             <div className="space-y-4">
               <div className="text-center space-y-2">
@@ -474,7 +543,7 @@ const Auth = () => {
                   className="w-full"
                   disabled={loading}
                 >
-                  {loading ? "Resending..." : "Resend Confirmation Email"}
+                  {loading ? <LoadingSpinner size="sm" text="Resending..." /> : "Resend Confirmation Email"}
                 </Button>
                 <Button 
                   onClick={handleClearPendingConfirmation} 
@@ -505,82 +574,128 @@ const Auth = () => {
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
             
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-phone">Email Address</Label>
-                  <Input
-                    id="email-phone"
-                    type="email"
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter your email address to sign in
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember-me"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  />
-                  <Label htmlFor="remember-me" className="text-sm">
-                    Remember me
-                  </Label>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Use a valid email address for account creation
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email-phone">Email Address</Label>
+                    <Input
+                      id="email-phone"
+                      type="email"
+                      value={emailOrPhone}
+                      onChange={(e) => setEmailOrPhone(e.target.value)}
+                      placeholder="your@email.com"
+                      required
+                      className={formErrors.emailOrPhone ? 'border-red-500' : ''}
+                    />
+                    {formErrors.emailOrPhone && (
+                      <p className="text-sm text-red-500">{formErrors.emailOrPhone}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Enter your email address to sign in
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className={formErrors.password ? 'border-red-500' : ''}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {formErrors.password && (
+                      <p className="text-sm text-red-500">{formErrors.password}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    />
+                    <Label htmlFor="remember-me" className="text-sm">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? <LoadingSpinner size="sm" text="Signing in..." /> : "Sign In"}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={emailOrPhone}
+                      onChange={(e) => setEmailOrPhone(e.target.value)}
+                      placeholder="your@email.com"
+                      required
+                      className={formErrors.emailOrPhone ? 'border-red-500' : ''}
+                    />
+                    {formErrors.emailOrPhone && (
+                      <p className="text-sm text-red-500">{formErrors.emailOrPhone}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Use a valid email address for account creation
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        className={formErrors.password ? 'border-red-500' : ''}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {formErrors.password && (
+                      <p className="text-sm text-red-500">{formErrors.password}</p>
+                    )}
+                  </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Create Account"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? <LoadingSpinner size="sm" text="Creating account..." /> : "Create Account"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
           )}
         </CardContent>
       </Card>
@@ -588,4 +703,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default EnhancedAuth; 

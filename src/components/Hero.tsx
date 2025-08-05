@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Gift, Users, Calendar, MessageCircle, ArrowRight, Play } from "lucide-react";
+import { Gift, Users, Calendar, ArrowRight, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,23 +20,23 @@ const Hero = () => {
       {/* Background Elements */}
       <div className="absolute inset-0 opacity-50"></div>
       
-      <div className="container mx-auto px-4 py-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="container mx-auto px-4 py-8 md:py-12 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Content */}
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-6">
+          <div className="space-y-6 md:space-y-8 animate-fade-in pt-8 md:pt-12">
+            <div className="space-y-4 md:space-y-6">
               {/* Celebratory badge removed for cleaner layout */}
               
-              <h1 className="text-5xl md:text-7xl font-black text-foreground leading-[0.9] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-foreground leading-[0.9] tracking-tight">
                 <div>
-                  {t('hero.title')}
+                  <span className="block">Nunca mas te olvides de un</span>
                   <span className="bg-gradient-to-r from-primary via-birthday to-gift bg-clip-text text-transparent block mt-2">
-                    {t('hero.titleHighlight')}
+                    Cumpleaños!
                   </span>
                 </div>
               </h1>
               
-              <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
+              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 {t('hero.description')}
               </p>
             </div>
@@ -44,10 +44,10 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 size="lg" 
-                className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group" 
+                className="text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-gradient-to-r from-primary to-birthday hover:shadow-glow transition-all duration-300 group" 
                 onClick={handleCreateGroup}
               >
-                <Users className="mr-3 w-5 h-5" />
+                <Users className="mr-2 md:mr-3 w-4 h-4 md:w-5 md:h-5" />
                 {t('hero.createGroup')}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -55,20 +55,62 @@ const Hero = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="text-lg px-8 py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300 group" 
+                className="text-base md:text-lg px-6 md:px-8 py-4 md:py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300 group" 
                 onClick={() => {
                   // Trigger join group popup
                   window.dispatchEvent(new CustomEvent('openJoinGroupDialog'));
                 }}
               >
-                <Play className="mr-3 w-5 h-5" />
+                <Play className="mr-2 md:mr-3 w-4 h-4 md:w-5 md:h-5" />
                 {t('hero.joinGroup')}
               </Button>
             </div>
 
+            {/* Free message with Kiwell reference */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-lg">
+              <div className="flex flex-col items-center space-y-3">
+                <p className="text-sm text-green-800 text-center font-medium">
+                  🎉 ¡Completamente gratis!
+                </p>
+                <p className="text-sm text-green-700 text-center">
+                  Chequea nuestro proyecto de wellness
+                </p>
+                <a 
+                  href="https://kiwell.ar/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-lime-700 hover:text-lime-600 font-medium group transition-all duration-200 hover:scale-105"
+                >
+                  {/* Kiwell Logo */}
+                  <img 
+                    src="/logos/Logo_kiwell_2025_Lime (2).png" 
+                    alt="Kiwell Logo" 
+                    className="w-6 h-6 object-contain"
+                    onError={(e) => {
+                      // Fallback to placeholder if logo doesn't exist
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-6 h-6 bg-gradient-to-br from-lime-400 to-lime-600 rounded-lg flex items-center justify-center shadow-sm hidden">
+                    <span className="text-white text-xs font-bold tracking-wide">KW</span>
+                  </div>
+                  <span className="text-lg font-semibold text-lime-700">kiwell.ar</span>
+                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                <p className="text-xs text-green-700 text-center max-w-sm">
+                  Un lugar donde podes encontrar profesionales y experiencias para potenciar tu bienestar integral
+                </p>
+              </div>
+            </div>
+
             {/* Mobile Image - Shows only on mobile, below buttons */}
-            <div className="relative animate-scale-in lg:hidden">
-              <div className="relative rounded-3xl overflow-hidden shadow-elevation bg-gradient-to-br from-white to-gray-50">
+            <div className="relative animate-scale-in lg:hidden mt-8">
+              <div className="relative rounded-2xl md:rounded-3xl overflow-hidden shadow-elevation bg-gradient-to-br from-white to-gray-50">
                 <img 
                   src={heroImageUrl} 
                   alt="Messi celebration with teammates"
@@ -77,39 +119,8 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
               </div>
               
-              <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-gift to-primary rounded-full flex items-center justify-center shadow-elevation animate-pulse">
-                <Calendar className="w-8 h-8 text-white" />
-              </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
-              <div className="text-center space-y-3 group hover:scale-105 transition-transform duration-300">
-                <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:shadow-lg transition-shadow">
-                  <Users className="w-7 h-7 text-primary" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">{t('hero.groupManagement')}</h3>
-              </div>
-              
-              <div className="text-center space-y-3 group hover:scale-105 transition-transform duration-300">
-                <div className="w-14 h-14 bg-gradient-to-br from-birthday/20 to-birthday/10 rounded-2xl flex items-center justify-center mx-auto group-hover:shadow-lg transition-shadow">
-                  <Calendar className="w-7 h-7 text-birthday" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">{t('hero.birthdayTracking')}</h3>
-              </div>
-              
-              <div className="text-center space-y-3 group hover:scale-105 transition-transform duration-300">
-                <div className="w-14 h-14 bg-gradient-to-br from-gift/20 to-gift/10 rounded-2xl flex items-center justify-center mx-auto group-hover:shadow-lg transition-shadow">
-                  <Gift className="w-7 h-7 text-gift" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">{t('hero.giftSuggestions')}</h3>
-              </div>
-              
-              <div className="text-center space-y-3 group hover:scale-105 transition-transform duration-300">
-                <div className="w-14 h-14 bg-gradient-to-br from-celebration/20 to-celebration/10 rounded-2xl flex items-center justify-center mx-auto group-hover:shadow-lg transition-shadow">
-                  <MessageCircle className="w-7 h-7 text-celebration" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">{t('hero.whatsappReminders')}</h3>
+              <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-gift to-primary rounded-full flex items-center justify-center shadow-elevation animate-pulse">
+                <Calendar className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
             </div>
           </div>

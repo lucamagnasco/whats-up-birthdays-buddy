@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
-import WhatsAppInfo from "@/components/WhatsAppInfo";
-import CTA from "@/components/CTA";
 import LanguageToggle from "@/components/LanguageToggle";
 import JoinGroupDialog from "@/components/JoinGroupDialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -162,8 +160,6 @@ const Index = () => {
       
       <Hero />
       <HowItWorks />
-      <WhatsAppInfo />
-      <CTA />
 
       <JoinGroupDialog 
         open={joinDialogOpen} 

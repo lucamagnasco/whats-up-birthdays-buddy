@@ -187,7 +187,7 @@ const CreateGroup = () => {
   const copyInviteLink = () => {
     if (!createdGroup) return;
     
-    const inviteUrl = `https://whats-up-birthdays-buddy.vercel.app/join?invite=${createdGroup.invite_code}`;
+    const inviteUrl = `https://no-cuelgues.vercel.app/join?invite=${createdGroup.invite_code}`;
     navigator.clipboard.writeText(inviteUrl);
     toast({
       title: "Copied! 📋",
@@ -198,7 +198,7 @@ const CreateGroup = () => {
   const shareOnWhatsApp = () => {
     if (!createdGroup) return;
     
-    const inviteUrl = `https://whats-up-birthdays-buddy.vercel.app/join?invite=${createdGroup.invite_code}`;
+    const inviteUrl = `https://no-cuelgues.vercel.app/join?invite=${createdGroup.invite_code}`;
     const message = `🎉 Join my birthday group "${createdGroup.name}"!\n\nClick this link to join and never miss a birthday again:\n${inviteUrl}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     
@@ -376,7 +376,7 @@ const CreateGroup = () => {
                 <p className="text-sm font-medium mb-2">Invite Link:</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs bg-background p-2 rounded border break-all">
-                    https://whats-up-birthdays-buddy.vercel.app/join?invite={createdGroup?.invite_code}
+                    https://no-cuelgues.vercel.app/join?invite={createdGroup?.invite_code}
                   </code>
                   <Button
                     variant="outline"
