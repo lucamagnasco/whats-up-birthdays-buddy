@@ -41,7 +41,7 @@ const Hero = () => {
                   Dejaste de usar facebook
                 </span>
                 {' '}y te olvidas de los cumpleaños??<br />
-                Crea grupos con amigos y recibí recordatorios de whatsapp con gustos y lista de deseos personalizados.
+                Crea grupos con amigos y recibí recordatorios de whatsapp.
               </p>
             </div>
 
