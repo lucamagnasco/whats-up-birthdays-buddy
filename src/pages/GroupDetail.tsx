@@ -317,14 +317,15 @@ const GroupDetail = () => {
                           )}
                         </div>
                       </div>
-                    <Badge 
-                      variant="default"
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1"
-                    >
-                      {formatBirthdayDate(birthday.birthday, 'es-ES', { day: 'numeric', month: 'short' })}
-                    </Badge>
-                  </div>
-                ))}
+                      <Badge 
+                        variant="default"
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1"
+                      >
+                        {formatBirthdayDate(birthday.birthday, 'es-ES', { day: 'numeric', month: 'short' })}
+                      </Badge>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
