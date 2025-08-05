@@ -29,7 +29,7 @@ const Hero = () => {
               
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-foreground leading-[0.9] tracking-tight">
                 <div>
-                  <span className="block">Nunca mas te olvides de un</span>
+                  <span className="block">Nunca más te olvides de un</span>
                   <span className="bg-gradient-to-r from-primary via-birthday to-gift bg-clip-text text-transparent block mt-2">
                     Cumpleaños!
                   </span>
@@ -81,7 +81,7 @@ const Hero = () => {
             <div className="mt-4 p-4 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-lg">
               <div className="flex flex-col items-center space-y-3">
                 <p className="text-sm text-green-700 text-center">
-                  Soy Luca, como me olvide el cumpleaños de mi mejor amigo, arme esta app gratuita. Me podes dar una mano chequeando mi otro proyecto de wellness:
+                  Soy Luca, como me olvidé el cumpleaños de mi mejor amigo, armé esta app gratuita. Me podés dar una mano chequeando mi otro proyecto de wellness:
                 </p>
                 <a 
                   href="https://kiwell.ar/" 
@@ -110,9 +110,6 @@ const Hero = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
-                <p className="text-xs text-green-700 text-center max-w-sm">
-                  Un lugar donde podes encontrar profesionales y experiencias para potenciar tu bienestar integral
-                </p>
               </div>
             </div>
 

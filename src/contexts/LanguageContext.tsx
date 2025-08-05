@@ -129,7 +129,7 @@ const translations: Record<Language, Record<string, string>> = {
   },
   es: {
     // Hero
-    'hero.title': 'Nunca mas te olvides de un',
+    'hero.title': 'Nunca más te olvides de un',
     'hero.titleHighlight': 'Cumpleaños!',
     'hero.description': 'Dejaste de usar facebook y te olvidas de los cumpleaños?? Crea grupos con amigos y recibí recordatorios de whatsapp.',
     'hero.createGroup': 'Crear Tu Grupo',
@@ -147,7 +147,7 @@ const translations: Record<Language, Record<string, string>> = {
     'features.createJoin.description': 'Inicia un grupo de cumpleaños o únete con un simple enlace de invitación. Perfecto para familias, amigos o colegas.',
     'features.createJoin.highlights': 'Enlaces de invitación fáciles,Gestión de grupos,Roles de miembros',
     'features.tracking.title': 'Seguimiento de Cumpleaños',
-    'features.tracking.description': 'Agrega tu cumpleaños y ve las próximas celebraciones. Nunca olvides una fecha importante.',
+    'features.tracking.description': 'Agregá tu cumpleaños y ve las próximas celebraciones. Nunca olvides una fecha importante.',
     'features.tracking.highlights': 'Próximos cumpleaños,Calendario de cumpleaños,Seguimiento de edad',
     'features.gifts.title': 'Recomendaciones de Regalos',
     'features.gifts.description': 'Comparte tus gustos e intereses para ayudar a los amigos a encontrar el regalo perfecto para ti.',
@@ -169,10 +169,10 @@ const translations: Record<Language, Record<string, string>> = {
     'howItWorks.step1.description': 'Inicia un nuevo grupo de cumpleaños o únete usando un enlace de invitación. Perfecto para familias, círculos de amigos o equipos de trabajo.',
     'howItWorks.step1.details': 'Enviar enlaces de invitación a amigos,Unirse fácil con un clic,Múltiples grupos soportados',
     'howItWorks.step2.title': 'Agregar Tus Detalles',
-    'howItWorks.step2.description': 'Completa tu nombre, cumpleaños y cosas que te gustan. Esto ayuda a los amigos a saber qué regalos te gustarían.',
+    'howItWorks.step2.description': 'Completá tu nombre, cumpleaños y cosas que te gustan. Esto ayuda a los amigos a saber qué regalos te gustarían.',
     'howItWorks.step2.details': 'Comparte tu cumpleaños,Lista tus intereses,Actualiza en cualquier momento',
     'howItWorks.step3.title': 'Ver los Gustos de Amigos',
-    'howItWorks.step3.description': 'Navega por los perfiles de los miembros de tu grupo para ver sus cumpleaños y preferencias de regalos en un solo lugar.',
+    'howItWorks.step3.description': 'Navegá por los perfiles de los miembros de tu grupo para ver sus cumpleaños y preferencias de regalos en un solo lugar.',
     'howItWorks.step3.details': 'Ver próximos cumpleaños,Ver ideas de regalos,Planificar con anticipación',
     'howItWorks.step4.title': 'Recibir Recordatorios WhatsApp',
     'howItWorks.step4.description': 'Recibe mensajes personalizados por WhatsApp antes de los cumpleaños de tus amigos con sus gustos y sugerencias de regalos.',
@@ -216,7 +216,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Index page dialog
     'index.joinTitle': 'Unirse a',
-    'index.joinDesc': 'Por favor completa tus datos para unirte al grupo',
+    'index.joinDesc': 'Por favor completá tus datos para unirte al grupo',
     'index.yourName': 'Tu Nombre',
     'index.yourNamePlaceholder': 'Ingresa tu nombre completo',
     'index.yourBirthday': 'Tu Cumpleaños',

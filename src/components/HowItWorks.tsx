@@ -18,14 +18,14 @@ const HowItWorks = () => {
     {
       step: "02", 
       title: "Agregar Gustos y Deseos",
-      description: "Completa tu nombre, cumpleaños y cosas que te gustan. Esto ayuda a los amigos a saber qué regalos te gustarían.",
+      description: "Completá tu nombre, cumpleaños y cosas que te gustan. Esto ayuda a los amigos a saber qué regalos te gustarían.",
       icon: Heart,
       color: "birthday"
     },
     {
       step: "03",
       title: "Ver Info de Amigos en tu Grupo",
-      description: "Navega por los perfiles de los miembros de tu grupo para ver sus cumpleaños y preferencias de regalos en un solo lugar.",
+      description: "Navegá por los perfiles de los miembros de tu grupo para ver sus cumpleaños y preferencias de regalos en un solo lugar.",
       icon: Eye,
       color: "gift"
     },
@@ -98,7 +98,7 @@ const HowItWorks = () => {
           <div className="mt-8 p-4 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-lg">
             <div className="flex flex-col items-center space-y-3">
               <p className="text-xs text-green-700 text-center">
-                Chequea nuestro proyecto de wellness
+                Chequeá nuestro proyecto de wellness
               </p>
               <a 
                 href="https://kiwell.ar/" 
@@ -127,9 +127,6 @@ const HowItWorks = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
-              <p className="text-xs text-green-700 text-center max-w-sm">
-                Un lugar donde podes encontrar profesionales y experiencias para potenciar tu bienestar integral
-              </p>
             </div>
           </div>
         </div>
