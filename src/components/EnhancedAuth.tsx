@@ -96,10 +96,13 @@ const EnhancedAuth = () => {
     // Clear any form errors
     setFormErrors({});
     
+    // Keep the email in the field for convenience
+    // Don't clear emailOrPhone so user doesn't have to retype it
+    
     addFeedbackMessage({
       type: 'info',
       title: "Account already exists! 🎉",
-      description: "We found your account. Please sign in with your password.",
+      description: `We found an account for ${emailOrPhone}. Please sign in with your password.`,
       autoDismiss: true,
       dismissAfter: 5000
     });
@@ -459,10 +462,25 @@ const EnhancedAuth = () => {
       });
 
       if (error) {
-        // Check if user already exists
-        if (error.message?.includes('User already registered') || 
-            error.message?.includes('already been registered') ||
-            error.code === 'auth/email-already-in-use') {
+        console.error("❌ Signup error details:", {
+          message: error.message,
+          status: error.status,
+          type: error.constructor.name,
+          code: error.code,
+        });
+
+        // Enhanced check for existing user - check multiple possible error patterns
+        const isExistingUser = 
+          error.message?.toLowerCase().includes('user already registered') ||
+          error.message?.toLowerCase().includes('already been registered') ||
+          error.message?.toLowerCase().includes('email already in use') ||
+          error.message?.toLowerCase().includes('already exists') ||
+          error.message?.toLowerCase().includes('already registered') ||
+          error.code === 'auth/email-already-in-use' ||
+          error.code === 'auth/user-already-registered' ||
+          error.status === 422; // Common status for existing user errors
+
+        if (isExistingUser) {
           handleUserExists();
           return;
         }
@@ -518,10 +536,18 @@ const EnhancedAuth = () => {
     } catch (error: any) {
       console.error("Signup error:", error);
       
-      // Check if user already exists
-      if (error.message?.includes('User already registered') || 
-          error.message?.includes('already been registered') ||
-          error.code === 'auth/email-already-in-use') {
+      // Enhanced check for existing user in catch block as well
+      const isExistingUser = 
+        error.message?.toLowerCase().includes('user already registered') ||
+        error.message?.toLowerCase().includes('already been registered') ||
+        error.message?.toLowerCase().includes('email already in use') ||
+        error.message?.toLowerCase().includes('already exists') ||
+        error.message?.toLowerCase().includes('already registered') ||
+        error.code === 'auth/email-already-in-use' ||
+        error.code === 'auth/user-already-registered' ||
+        error.status === 422;
+
+      if (isExistingUser) {
         handleUserExists();
         return;
       }

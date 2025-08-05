@@ -119,16 +119,22 @@ export class ErrorHandler {
 
     // Handle Supabase errors
     if (error?.message) {
-      if (error.message.includes('Password should be at least 6 characters')) {
+      const errorMessage = error.message.toLowerCase();
+      
+      if (errorMessage.includes('password should be at least 6 characters')) {
         return this.errorMap['auth/weak-password'];
       }
-      if (error.message.includes('User already registered')) {
+      if (errorMessage.includes('user already registered') ||
+          errorMessage.includes('already been registered') ||
+          errorMessage.includes('email already in use') ||
+          errorMessage.includes('already exists') ||
+          errorMessage.includes('already registered')) {
         return this.errorMap['auth/email-already-in-use'];
       }
-      if (error.message.includes('Invalid login credentials')) {
+      if (errorMessage.includes('invalid login credentials')) {
         return this.errorMap['auth/wrong-password'];
       }
-      if (error.message.includes('Unable to send email')) {
+      if (errorMessage.includes('unable to send email')) {
         return {
           code: 'email/send-failed',
           message: error.message,
@@ -137,6 +143,11 @@ export class ErrorHandler {
           severity: 'error'
         };
       }
+    }
+
+    // Check for status codes that might indicate existing user
+    if (error?.status === 422) {
+      return this.errorMap['auth/email-already-in-use'];
     }
 
     // Default error
