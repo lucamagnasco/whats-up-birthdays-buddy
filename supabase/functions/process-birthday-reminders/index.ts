@@ -17,11 +17,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get all pending birthday messages
+    // Get all pending or processing birthday messages
     const { data: pendingMessages, error } = await supabase
       .from('birthday_messages')
       .select('*')
-      .eq('status', 'pending');
+      .in('status', ['pending', 'processing']);
 
     if (error) {
       throw error;
@@ -29,12 +29,12 @@ serve(async (req) => {
 
     if (!pendingMessages || pendingMessages.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No pending messages to process' }),
+        JSON.stringify({ message: 'No pending or processing messages to process' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing ${pendingMessages.length} pending birthday messages`);
+    console.log(`Processing ${pendingMessages.length} pending/processing birthday messages`);
 
     const results = [];
 
