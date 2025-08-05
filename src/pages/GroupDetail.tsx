@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { parseBirthdayDate, formatBirthdayDate } from "@/lib/utils";
+import { parseBirthdayDate, formatBirthdayDate, isBirthdayToday } from "@/lib/utils";
 
 interface Group {
   id: string;
@@ -126,7 +126,7 @@ const GroupDetail = () => {
       
       const timeDiff = nextBirthday.getTime() - today.getTime();
       const daysUntil = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      const isToday = daysUntil === 0;
+      const isToday = isBirthdayToday(member.birthday);
       
       console.log(`${member.name}: nextBirthday=${nextBirthday.toISOString().split('T')[0]}, daysUntil=${daysUntil}, isToday=${isToday}`);
       

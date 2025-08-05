@@ -15,6 +15,17 @@ export function parseBirthdayDate(birthdayString: string): Date {
 }
 
 /**
+ * Check if a birthday is today, accounting for timezone issues
+ */
+export function isBirthdayToday(birthdayString: string): boolean {
+  const today = new Date();
+  const birthday = parseBirthdayDate(birthdayString);
+  
+  // Compare month and day only, ignore year
+  return birthday.getMonth() === today.getMonth() && birthday.getDate() === today.getDate();
+}
+
+/**
  * Format a birthday date string for display
  */
 export function formatBirthdayDate(birthdayString: string, locale: string = 'en-US', options?: Intl.DateTimeFormatOptions): string {
