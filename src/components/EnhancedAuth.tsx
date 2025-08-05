@@ -88,6 +88,7 @@ const EnhancedAuth = () => {
     // Clear any pending confirmation state immediately
     setPendingConfirmation(false);
     localStorage.removeItem('pending_email_confirmation');
+    localStorage.removeItem('pending_email_confirmation_timestamp');
     
     // Switch to sign-in tab
     setActiveTab('signin');
@@ -102,6 +103,52 @@ const EnhancedAuth = () => {
       autoDismiss: true,
       dismissAfter: 5000
     });
+  };
+
+  const handleForgotPassword = async () => {
+    if (!emailOrPhone || !isEmail(emailOrPhone)) {
+      addFeedbackMessage({
+        type: 'error',
+        title: "Email required",
+        description: "Please enter your email address first to reset your password.",
+        autoDismiss: true,
+        dismissAfter: 5000
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailOrPhone, {
+        redirectTo: window.location.hostname === 'localhost' 
+          ? 'https://localhost:3000/auth'
+          : 'https://no-cuelgues.vercel.app/auth'
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      addFeedbackMessage({
+        type: 'success',
+        title: "Password reset email sent! 📧",
+        description: "Please check your inbox and spam folder for the password reset link.",
+        autoDismiss: true,
+        dismissAfter: 5000
+      });
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      const appError = ErrorHandler.handleError(error);
+      addFeedbackMessage({
+        type: 'error',
+        title: "Password reset failed",
+        description: appError.userMessage,
+        autoDismiss: true,
+        dismissAfter: 5000
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -132,16 +179,33 @@ const EnhancedAuth = () => {
             if (event === 'SIGNED_IN' && session?.user) {
               // Clear any pending confirmations
               localStorage.removeItem('pending_email_confirmation');
+              localStorage.removeItem('pending_email_confirmation_timestamp');
               setPendingConfirmation(false);
 
-              // Show success message
-              addFeedbackMessage({
-                type: 'success',
-                title: "Email confirmed! 🎉",
-                description: "Welcome to Birthday Buddy!",
-                autoDismiss: true,
-                dismissAfter: 3000
-              });
+              // Check if this is a password reset by looking at the URL or session
+              const urlParams = new URLSearchParams(window.location.search);
+              const isPasswordReset = urlParams.get('type') === 'recovery' || 
+                                    window.location.hash.includes('type=recovery');
+              
+              if (isPasswordReset) {
+                // Handle password reset success
+                addFeedbackMessage({
+                  type: 'success',
+                  title: "Password reset successful! 🎉",
+                  description: "Your password has been updated successfully.",
+                  autoDismiss: true,
+                  dismissAfter: 3000
+                });
+              } else {
+                // Regular sign in
+                addFeedbackMessage({
+                  type: 'success',
+                  title: "Email confirmed! 🎉",
+                  description: "Welcome to Birthday Buddy!",
+                  autoDismiss: true,
+                  dismissAfter: 3000
+                });
+              }
 
               // Handle pending group associations
               const pendingGroupId = localStorage.getItem('pendingGroupId');
@@ -183,6 +247,15 @@ const EnhancedAuth = () => {
                   navigate("/groups");
                 }, 1000);
               }
+            } else if (event === 'PASSWORD_RECOVERY') {
+              // Handle password recovery event
+              addFeedbackMessage({
+                type: 'success',
+                title: "Password reset link sent! 📧",
+                description: "Please check your email for the password reset link.",
+                autoDismiss: true,
+                dismissAfter: 5000
+              });
             } else if (event === 'SIGNED_OUT') {
               // Handle sign out if needed
             }
@@ -355,6 +428,7 @@ const EnhancedAuth = () => {
 
   const handleClearPendingConfirmation = () => {
     localStorage.removeItem('pending_email_confirmation');
+    localStorage.removeItem('pending_email_confirmation_timestamp');
     setPendingConfirmation(false);
     setEmailOrPhone('');
     setPassword('');
@@ -666,15 +740,25 @@ const EnhancedAuth = () => {
                       <p className="text-sm text-red-500">{formErrors.password}</p>
                     )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    />
-                    <Label htmlFor="remember-me" className="text-sm">
-                      Remember me
-                    </Label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="remember-me"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      />
+                      <Label htmlFor="remember-me" className="text-sm">
+                        Remember me
+                      </Label>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-muted-foreground hover:text-foreground p-0 h-auto"
+                      onClick={handleForgotPassword}
+                    >
+                      Forgot password?
+                    </Button>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? <LoadingSpinner size="sm" text="Signing in..." /> : "Sign In"}

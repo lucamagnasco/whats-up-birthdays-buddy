@@ -49,6 +49,22 @@ const Auth = () => {
     setActiveTab(flow);
   }, [flow]);
 
+  // Cleanup effect to handle edge cases
+  useEffect(() => {
+    // Cleanup function to handle component unmount or navigation
+    const handleBeforeUnload = () => {
+      // Don't clear everything on unload, just log for debugging
+      console.log('Auth component unmounting');
+    };
+
+    // Add event listener for page unload
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // Smart back navigation - goes to dashboard if authenticated, landing page if not
   const handleBackNavigation = () => {
     if (currentUser && !isAnonymous) {
@@ -140,12 +156,19 @@ const Auth = () => {
     // Clear any pending confirmation state immediately
     setPendingConfirmation(false);
     localStorage.removeItem('pending_email_confirmation');
+    localStorage.removeItem('pending_email_confirmation_timestamp');
     
     // Switch to sign-in tab
     setActiveTab('signin');
     
     // Clear any form errors
     setFormErrors({});
+    
+    // Clear field status
+    setFieldStatus({});
+    
+    // Clear password strength
+    setPasswordStrength(null);
     
     toast({
       title: "Account already exists! 🎉",
@@ -174,13 +197,27 @@ const Auth = () => {
             if (event === 'SIGNED_IN' && session?.user) {
               // Clear any pending confirmations
               localStorage.removeItem('pending_email_confirmation');
+              localStorage.removeItem('pending_email_confirmation_timestamp');
               setPendingConfirmation(false);
 
-              // Show success message
-              toast({
-                title: "Email confirmed! 🎉",
-                description: "Welcome to Birthday Buddy!",
-              });
+              // Check if this is a password reset by looking at the URL or session
+              const urlParams = new URLSearchParams(window.location.search);
+              const isPasswordReset = urlParams.get('type') === 'recovery' || 
+                                    window.location.hash.includes('type=recovery');
+              
+              if (isPasswordReset) {
+                // Handle password reset success
+                toast({
+                  title: "Password reset successful! 🎉",
+                  description: "Your password has been updated successfully.",
+                });
+              } else {
+                // Regular sign in
+                toast({
+                  title: "Email confirmed! 🎉",
+                  description: "Welcome to Birthday Buddy!",
+                });
+              }
 
               // Handle pending group associations
               const pendingGroupId = localStorage.getItem('pendingGroupId');
@@ -214,6 +251,12 @@ const Auth = () => {
                   navigate("/groups");
                 }, 1000);
               }
+            } else if (event === 'PASSWORD_RECOVERY') {
+              // Handle password recovery event
+              toast({
+                title: "Password reset link sent! 📧",
+                description: "Please check your email for the password reset link.",
+              });
             } else if (event === 'SIGNED_OUT') {
               // Handle sign out if needed
             }
@@ -229,6 +272,7 @@ const Auth = () => {
           
           // Clear any pending confirmations since user is authenticated
           localStorage.removeItem('pending_email_confirmation');
+          localStorage.removeItem('pending_email_confirmation_timestamp');
           setPendingConfirmation(false);
 
           // Check if there's a specific redirect destination
@@ -268,9 +312,23 @@ const Auth = () => {
           
           // Check for pending confirmations
           const pendingEmail = localStorage.getItem('pending_email_confirmation');
+          const pendingTimestamp = localStorage.getItem('pending_email_confirmation_timestamp');
+          
           if (pendingEmail) {
-            setEmailOrPhone(pendingEmail);
-            setPendingConfirmation(true);
+            // Check if confirmation is still valid (24 hours)
+            const now = Date.now();
+            const timestamp = pendingTimestamp ? parseInt(pendingTimestamp) : 0;
+            const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+            
+            if (now - timestamp < twentyFourHours) {
+              setEmailOrPhone(pendingEmail);
+              setPendingConfirmation(true);
+            } else {
+              // Confirmation expired, clear it
+              localStorage.removeItem('pending_email_confirmation');
+              localStorage.removeItem('pending_email_confirmation_timestamp');
+              console.log('Pending email confirmation expired');
+            }
           }
           
           // Load remembered email if available
@@ -377,6 +435,7 @@ const Auth = () => {
 
   const handleClearPendingConfirmation = () => {
     localStorage.removeItem('pending_email_confirmation');
+    localStorage.removeItem('pending_email_confirmation_timestamp');
     setPendingConfirmation(false);
     setEmailOrPhone('');
     setPassword('');
@@ -468,6 +527,7 @@ const Auth = () => {
         
         // Store signup info for potential resend
         localStorage.setItem('pending_email_confirmation', emailOrPhone);
+        localStorage.setItem('pending_email_confirmation_timestamp', Date.now().toString());
         setPendingConfirmation(true);
       } else if (data.session) {
         toast({
@@ -477,6 +537,7 @@ const Auth = () => {
         
         // Clear any pending confirmations since user is now signed in
         localStorage.removeItem('pending_email_confirmation');
+        localStorage.removeItem('pending_email_confirmation_timestamp');
         setPendingConfirmation(false);
         
         // Handle redirect
@@ -584,6 +645,45 @@ const Auth = () => {
         title: appError.userMessage,
         description: appError.action,
         variant: appError.severity === 'error' ? 'destructive' : 'default',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!emailOrPhone || !isEmail(emailOrPhone)) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address first to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailOrPhone, {
+        redirectTo: window.location.hostname === 'localhost' 
+          ? 'https://localhost:3000/auth'
+          : 'https://no-cuelgues.vercel.app/auth'
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Password reset email sent! 📧",
+        description: "Please check your inbox and spam folder for the password reset link.",
+      });
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      const appError = ErrorHandler.handleError(error);
+      toast({
+        title: "Password reset failed",
+        description: appError.userMessage,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -781,13 +881,7 @@ const Auth = () => {
                     type="button"
                     variant="link"
                     className="text-sm text-muted-foreground hover:text-foreground p-0 h-auto"
-                    onClick={() => {
-                      // Redirect to Supabase's default reset password page
-                      const redirectUrl = window.location.hostname === 'localhost' 
-                        ? 'https://localhost:3000/auth'
-                        : 'https://no-cuelgues.vercel.app/auth';
-                      window.location.href = `https://mxprusqbnjhbqstmrgkt.supabase.co/auth/v1/recover?redirect_to=${encodeURIComponent(redirectUrl)}`;
-                    }}
+                    onClick={handleForgotPassword}
                   >
                     Forgot password?
                   </Button>
