@@ -154,6 +154,7 @@ const GroupDetail = () => {
     console.log('Upcoming birthdays:', birthdays);
     console.log('Luca Mag birthday check:', birthdays.find(b => b.name === 'Luca Mag'));
     console.log('Today birthdays:', birthdays.filter(b => b.isToday));
+    console.log('isBirthdayToday test for Luca Mag:', isBirthdayToday('1990-08-05'));
   };
 
   const copyInviteLink = () => {
@@ -286,24 +287,36 @@ const GroupDetail = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {upcomingBirthdays.filter(b => b.isToday).map((birthday) => (
-                  <div 
-                    key={birthday.id} 
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 rounded-lg shadow-md"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 bg-yellow-400 rounded-full">
-                        <span className="text-white text-xl">🎉</span>
+                {upcomingBirthdays.filter(b => b.isToday).map((birthday) => {
+                  const member = members.find(m => m.id === birthday.id);
+                  return (
+                    <div 
+                      key={birthday.id} 
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 rounded-lg shadow-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-yellow-400 rounded-full">
+                          <span className="text-white text-xl">🎉</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg text-orange-800">
+                            {birthday.name}
+                          </p>
+                          <p className="text-sm text-orange-600 font-medium">
+                            ¡Hoy es su cumpleaños! 🎂
+                          </p>
+                          {member?.likes && (
+                            <p className="text-xs text-orange-500 mt-1">
+                              <strong>Gustos:</strong> {member.likes}
+                            </p>
+                          )}
+                          {member?.gift_wishes && (
+                            <p className="text-xs text-orange-500">
+                              <strong>Deseos:</strong> {member.gift_wishes}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-lg text-orange-800">
-                          {birthday.name}
-                        </p>
-                        <p className="text-sm text-orange-600 font-medium">
-                          ¡Hoy es su cumpleaños! 🎂
-                        </p>
-                      </div>
-                    </div>
                     <Badge 
                       variant="default"
                       className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1"
