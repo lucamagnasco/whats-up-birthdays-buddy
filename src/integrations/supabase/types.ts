@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -121,7 +121,7 @@ export type Database = {
       groups: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           deactivated_at: string | null
           description: string | null
           id: string
@@ -131,7 +131,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           deactivated_at?: string | null
           description?: string | null
           id?: string
@@ -141,7 +141,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           deactivated_at?: string | null
           description?: string | null
           id?: string
@@ -261,7 +261,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_upcoming_birthdays: {
+      bytea_to_text: {
+        Args: { data: string }
+        Returns: string
+      }
+      check_todays_birthdays: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -269,16 +273,113 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string[]
       }
+      http: {
+        Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_delete: {
+        Args:
+          | { content: string; content_type: string; uri: string }
+          | { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_get: {
+        Args: { data: Json; uri: string } | { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_head: {
+        Args: { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_header: {
+        Args: { field: string; value: string }
+        Returns: Database["public"]["CompositeTypes"]["http_header"]
+      }
+      http_list_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          curlopt: string
+          value: string
+        }[]
+      }
+      http_patch: {
+        Args: { content: string; content_type: string; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_post: {
+        Args:
+          | { content: string; content_type: string; uri: string }
+          | { data: Json; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_put: {
+        Args: { content: string; content_type: string; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_reset_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      http_set_curlopt: {
+        Args: { curlopt: string; value: string }
+        Returns: boolean
+      }
+      process_pending_birthday_messages: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       process_pending_messages: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      send_birthday_message: {
+        Args: {
+          language: string
+          message_id: string
+          recipient_number: string
+          template_name: string
+          template_parameters: Json
+        }
+        Returns: undefined
+      }
+      sync_existing_data_to_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      text_to_bytea: {
+        Args: { data: string }
+        Returns: string
+      }
+      trigger_birthday_processing: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      urlencode: {
+        Args: { data: Json } | { string: string } | { string: string }
+        Returns: string
       }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      http_header: {
+        field: string | null
+        value: string | null
+      }
+      http_request: {
+        method: unknown | null
+        uri: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content_type: string | null
+        content: string | null
+      }
+      http_response: {
+        status: number | null
+        content_type: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content: string | null
+      }
     }
   }
 }
