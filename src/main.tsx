@@ -10,6 +10,7 @@ import GroupDetail from "./pages/GroupDetail";
 import GroupCalendar from "./pages/GroupCalendar";
 import Profile from "./pages/Profile";
 import JoinGroup from "./pages/JoinGroup";
+import JoinWithoutCode from "./pages/JoinWithoutCode";
 import CreateGroup from "./pages/CreateGroup";
 import NotFound from "./pages/NotFound";
 import './index.css'
@@ -29,6 +30,7 @@ function App() {
           <Route path="/create-group" element={<CreateGroup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/join" element={<JoinGroup />} />
+          <Route path="/join-group" element={<JoinWithoutCode />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

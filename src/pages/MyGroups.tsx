@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Calendar, Gift, Edit, Copy, MessageCircle, Share2, LogOut, Plus, Trash2 } from "lucide-react";
+import ShareGroupButton from "@/components/ShareGroupButton";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import UserMenu from "@/components/UserMenu";
@@ -549,11 +550,18 @@ const MyGroups = () => {
                         {group.description && (
                           <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
                         )}
-                        <div className="flex items-center gap-2 mt-2">
-                          <Users className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            {group.member_count} member{group.member_count !== 1 ? 's' : ''}
-                          </span>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {group.member_count} member{group.member_count !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <ShareGroupButton 
+                            groupName={group.name}
+                            inviteCode={group.invite_code}
+                            className="opacity-75 hover:opacity-100"
+                          />
                         </div>
                       </div>
                       {/* Admin Delete Button */}

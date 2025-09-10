@@ -131,9 +131,20 @@ const Index = () => {
       });
       localStorage.setItem('anonymousGroups', JSON.stringify(anonymousGroups));
       
-      // Redirect to groups page
+      // Show success and suggest next actions
       setTimeout(() => {
-        window.location.href = '/groups';
+        // Offer user the choice to create account or continue browsing
+        const createAccount = confirm(
+          `¡Genial! Te uniste a "${selectedGroup.name}" exitosamente! 🎉\n\n¿Querés crear una cuenta para gestionar tus grupos y recibir notificaciones? \n\n✅ Presiona OK para crear cuenta\n❌ Presiona Cancelar para continuar sin cuenta`
+        );
+        
+        if (createAccount) {
+          sessionStorage.setItem('redirect_to', '/my-groups');
+          sessionStorage.setItem('auth_context', 'post-join');
+          window.location.href = '/auth?context=post-join&flow=signup';
+        } else {
+          window.location.href = '/my-groups';
+        }
       }, 2000);
 
     } catch (error: any) {
@@ -149,11 +160,11 @@ const Index = () => {
     <div className="min-h-screen">
       <LanguageToggle />
       
-      {/* Sign-in button - white with orange hover, better spacing */}
+      {/* Sign-in button - better positioned and styled */}
       <Button 
         variant="outline"
-                    onClick={() => window.location.href = '/auth'}
-        className="fixed top-4 right-28 z-40 bg-white border border-orange-200 text-gray-900 hover:bg-orange-500 hover:text-white hover:border-orange-500 font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+        onClick={() => window.location.href = '/auth'}
+        className="fixed top-4 right-20 z-40 bg-white/90 backdrop-blur-sm border border-primary/20 text-gray-900 hover:bg-primary hover:text-white hover:border-primary font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-sm"
       >
         {t('index.signIn')}
       </Button>

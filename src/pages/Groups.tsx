@@ -15,6 +15,7 @@ import UserMenu from "@/components/UserMenu";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatBirthdayDate } from "@/lib/utils";
+import ViralSharePrompt from "@/components/ViralSharePrompt";
 
 interface Group {
   id: string;
@@ -44,6 +45,7 @@ const Groups = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
+  const [showViralShare, setShowViralShare] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { toast } = useToast();
 
@@ -290,8 +292,14 @@ const Groups = () => {
       } else {
         toast({
           title: "Group Created Successfully! 🎉",
-          description: "Your group is ready to use.",
+          description: "Your group is ready to use. Now invite your friends!",
         });
+        
+        // Show viral sharing prompt after short delay
+        setTimeout(() => {
+          setSelectedGroup(data);
+          setShowViralShare(true);
+        }, 1500);
       }
 
     } catch (error: any) {
@@ -937,6 +945,15 @@ const Groups = () => {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Viral Share Prompt */}
+      {selectedGroup && showViralShare && (
+        <ViralSharePrompt
+          groupName={selectedGroup.name}
+          inviteCode={selectedGroup.invite_code}
+          memberCount={1} // Just created, so only 1 member (creator)
+        />
       )}
     </div>
   );

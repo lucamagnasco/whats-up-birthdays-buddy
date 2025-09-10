@@ -354,17 +354,15 @@ const JoinGroup = () => {
   };
 
   const handleGoToGroup = () => {
-    // Store context and redirect to auth to see the group they joined
-    sessionStorage.setItem('auth_context', 'join');
-    sessionStorage.setItem('redirect_to', '/my-groups');
-    navigate('/auth?context=join');
+    // Go directly to groups without forcing auth for better UX
+    navigate('/my-groups');
   };
 
   const handleCreateAccount = () => {
     // Store context and redirect to auth to create their own group
-    sessionStorage.setItem('auth_context', 'create');
-    sessionStorage.setItem('redirect_to', '/create-group');
-    navigate('/auth?context=create');
+    sessionStorage.setItem('auth_context', 'post-join-create');
+    sessionStorage.setItem('redirect_to', '/my-groups');
+    navigate('/auth?context=post-join&flow=signup');
   };
 
   if (loading) {

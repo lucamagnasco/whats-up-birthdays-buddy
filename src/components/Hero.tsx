@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Gift, Users, Calendar, ArrowRight, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
+import QuickActions from "./QuickActions";
 
 const heroImageUrl = "/lovable-uploads/d59c27c8-a272-4cbe-b320-54b7ba196619.png";
 
@@ -61,13 +62,26 @@ const Hero = () => {
                 variant="outline" 
                 className="text-base md:text-lg px-6 md:px-8 py-4 md:py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300 group" 
                 onClick={() => {
-                  // Trigger join group popup
+                  // Trigger join group popup for immediate action
                   window.dispatchEvent(new CustomEvent('openJoinGroupDialog'));
                 }}
               >
                 <Play className="mr-2 md:mr-3 w-4 h-4 md:w-5 md:h-5" />
                 {t('hero.joinGroup')}
               </Button>
+            </div>
+
+            {/* Quick action hint */}
+            <div className="text-center mt-4">
+              <p className="text-sm text-muted-foreground">
+                ¿Ya tenés un código? {" "}
+                <button 
+                  onClick={() => window.location.href = '/join-group'}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Ingresalo acá
+                </button>
+              </p>
             </div>
 
             {/* Free message - moved outside Kiwell box for visual separation */}
@@ -148,6 +162,9 @@ const Hero = () => {
             </div>
           </div>
         </div>
+        
+        {/* How it works section */}
+        <QuickActions />
       </div>
     </div>
   );
